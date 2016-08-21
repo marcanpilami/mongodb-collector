@@ -1,0 +1,664 @@
+﻿@* @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer; *@
+
+@{
+    ViewBag.Title = "Performances MongoDB";
+}
+
+@section stylesheet{
+    <link rel="stylesheet" type="text/css" href="@Url.Content("~/lib/jqplot-bower/dist/jquery.jqplot.min.css")" />
+}
+
+@section Scripts{
+    <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="@Url.Content("~/lib/jqplot-bower/dist/excanvas..min.js")"></script><![endif]-->
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/jquery.jqplot.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.dateAxisRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.canvasTextRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.canvasAxisLabelRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.barRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.meterGaugeRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.categoryAxisRenderer.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.pointLabels.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.cursor.min.js")"></script>
+    <script src="@Url.Content("~/lib/jqplot-bower/dist/plugins/jqplot.highlighter.min.js")"></script>
+}
+
+<div style="height:100%;">
+    <div class="container-fluid">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="panel-title" id="title1"></div>
+            </div>
+            <div class="panel-body" style=" padding-top: 0px; padding-bottom: 0px;">
+                <div class="row" style="height: 27vh">
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="queriestotal1"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="connection1"></div>
+
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="iow"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="ior"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="networkin"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="networkout"></div>
+                </div>
+                <div class="row" style="height: 15vh">
+                    <div class="col-md-6" style="height: 100%" id="storage1"></div>
+                    <div class="col-md-6" style="height: 100%" id="querytype1"></div>
+                </div>
+                <div class="row" style="height: 25vh">
+                    <div class="col-md-8" style="height: 15vh; margin-top: 3vh;" id="mem1"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="pagefault1"></div>
+                    <div class="col-md-2" style="height: 100%; padding: 0px;" id="readintocache1"></div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="panel-title">Requêteur</div>
+            </div>
+            <div class="panel-body" style=" padding-top: 0px;">
+                <div class="row">
+                    <div class="col-md-12">
+                        <form class="form-inline" style="display: inline;">
+                            <div class="form-group">
+                                <label for="filternode">Noeud</label>
+                                <select id="filternode" class="form-control"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filterkey">Indicateur</label>
+                                <select id="filterkey" class="form-control"></select>
+                            </div>
+                        </form>
+                        <button class="btn btn-default" onclick="add_left_axis()">Ajouter axe gauche</button>
+                        <button class="btn btn-default" onclick="add_right_axis()">Ajouter axe droite</button>
+                        <button class="btn btn-default" onclick="clear_graph()">Vider</button>
+                        <button class="btn btn-default" onclick="refresh_graph()">Rafraîchir</button>
+                    </div>
+                    <div class="col-md-12">
+                        <div id="chart_1" style="height:350px;width:100%; "></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="panel-title">Requêtes tracées les plus récentes</div>
+            </div>
+            <div class="panel-body table-responsive" style=" padding-top: 0px;">
+                <table class="table table-striped table-condensed">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Millisecondes</th>
+                            <th>Client</th>
+                            <th>Opération</th>
+                            <th>Cible</th>
+                            <th>Examinés</th>
+                            <th>Modifiés</th>
+                            <th>Créés</th>
+                            <th>Retournés</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slow"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var plot1 = null;
+    var keys = null;
+    var nodes = [];
+    var axis1_keys = [];
+    var axis2_keys = [];
+    var plots = [];
+
+    $(document).ready(function () {
+        $.jqplot.config.enablePlugins = true;
+
+        $("#filternode").change(function () {
+            // Change summary
+            $.each(plots, function () {
+                this.destroy();
+            });
+            plots.length = 0;
+            addSummary($("#filternode").val());
+
+            // Reset explorer graph
+            axis1_keys.length = 0;
+            axis2_keys.length = 0;
+            axis1_keys.push("queries_find_count", "queries_insert_count", "queries_update_count");
+            axis2_keys.push("lock_collection_exclusive_intent_wait_s", "lock_database_exclusive_intent_wait_s", "lock_global_exclusive_intent_wait_s");
+            replot();
+
+            // Change possible keys
+            var nodekeys = keys[$("#filternode").val()];
+            $("#filterkey").empty();
+            $.each(nodekeys, function () {
+                $("#filterkey").append("<option value='" + this + "'>" + this + "</option>");
+            });
+        });
+
+        $.ajax({
+            url: "@Url.Action("GetMongoPerfQueryParameters")",
+            success: function (data) {
+                keys = data;
+                for (var prop in data) {
+                    nodes.push(prop);
+                }
+
+                $.each(nodes, function () {
+                    $("#filternode").append("<option value='" + this + "'>" + this + "</option>");
+                });
+                $("#filternode").trigger('change');
+            }
+        });
+    });
+
+    function replot() {
+        plot(axis1_keys, axis2_keys, moment().subtract(2, 'hours').toISOString(), moment().toISOString(), $("#filternode").val());
+    }
+
+
+
+    function plot(axis1_keys, axis2_keys, after, before, node) {
+        if (!axis1_keys) { axis1_keys = []; }
+        if (!axis2_keys) { axis2_keys = []; }
+
+        var axis1_data = [], axis2_data = [];
+        var axis1_legend = [], axis2_legend = [];
+
+        $.each(axis1_keys, function () {
+            var key = this;
+            request_data(this, after, before, node, function (data) {
+                axis1_data.push(data);
+                axis1_legend.push(key);
+                if (axis1_data.length === axis1_keys.length && axis2_data.length === axis2_keys.length) {
+                    build_graph(axis1_data.concat(axis2_data), axis1_legend, axis2_legend);
+                }
+            });
+        });
+
+        $.each(axis2_keys, function () {
+            var key = this;
+            request_data(this, after, before, node, function (data) {
+                axis2_data.push(data);
+                axis2_legend.push(key);
+                if (axis1_data.length === axis1_keys.length && axis2_data.length === axis2_keys.length) {
+                    build_graph(axis1_data.concat(axis2_data), axis1_legend, axis2_legend);
+                }
+            });
+        });
+    }
+
+    function request_data(key, after, before, node, callback) {
+        // 2016-07-09T16:00:00 format for dates
+
+        $.ajax({
+            url: "@Url.Action("GetMongoPerfData", new { nodename = "NODE", from = "FROM", to = "TO", key = "KEY" })".replace("NODE", node).replace("KEY", key).replace("FROM", after).replace("TO", before),
+            success: function (data) {
+                var results = [];
+                $.each(data, function () {
+                    var start = new Date(this.key);
+                    results.push([start, this.value]);
+                });
+                if (results.length == 0) {
+                    results = [[null]];
+                }
+
+                callback(results);
+            }
+        });
+    }
+
+
+    function build_graph(data, axis1_legend, axis2_legend) {
+        var series = [];
+        $.each(axis1_legend, function () {
+            var key = this;
+            series.push({
+                label: key + " (axe gauche)",
+                yaxis: "yaxis",
+            });
+        });
+        $.each(axis2_legend, function () {
+            var key = this;
+            series.push({
+                label: key + " (axe droite)",
+                yaxis: "y2axis",
+            });
+        });
+
+        if (plot1 == null) {
+            plot1 = $.jqplot('chart_1', data, {
+                legend: {
+                    show: true,
+                },
+                cursor: {
+                    zoom: true,
+                    show: true,
+                    showTooltip: false,
+                },
+                highlighter: {
+                    tooltipAxes: 'y',
+                },
+                seriesDefaults: {
+                    pointLabels: { show: false, }
+                },
+                series: series,
+                axes: {
+                    xaxis: {
+                        renderer: $.jqplot.DateAxisRenderer,
+                        labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                    },
+                    yaxis: {
+                        label: "unit1",
+                        labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                        tickOptions: {
+                            formatter: tickRenderer,
+                        },
+                    },
+                    y2axis: {
+                        label: "unit2",
+                        labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+                        tickOptions: {
+                            formatter: tickRenderer,
+                        },
+                    }
+                },
+
+            });
+        } else {
+            plot1.replot({ data: data, series: series, });
+        }
+    }
+
+    function clear_graph() {
+        axis1_keys.length = 0;
+        axis2_keys.length = 0;
+        plot1.replot({ data: [[null]] });
+    }
+
+    function add_left_axis() {
+        var kk = $("#filterkey").val();
+        axis1_keys.push(kk);
+        replot();
+    }
+
+    function add_right_axis() {
+        var kk = $("#filterkey").val();
+        axis2_keys.push(kk);
+        replot();
+    }
+
+    function refresh_graph() {
+        replot();
+    }
+
+
+    /// format with respect to the usual k, M, G, T notation with between 1 to 3 numbers before comma, at most 1 after.
+    function tickRenderer(format, data) {
+        var tmp = data;
+        var unit = ""; // we begin with no multiplier
+        if (tmp < 1000) {
+            tmp = Math.round(tmp * 10) / 10;
+        }
+        else if (tmp / 1000 < 1000) {
+            unit = "k";
+            tmp = Math.round(tmp / 100) / 10;
+        }
+        else if (tmp / 1000000 < 1000) {
+            unit = "M";
+            tmp = Math.round(tmp / 100000) / 10;
+        }
+        else if (tmp / 1000000000 < 1000) {
+            unit = "G";
+            tmp = Math.round(tmp / 100000000) / 10;
+        }
+        else if (tmp / 1000000000000 < 1000) {
+            unit = "T";
+            tmp = Math.round(tmp / 100000000000) / 10;
+        }
+
+        return tmp + unit;
+    }
+
+
+    function addSummary(node) {
+        $.ajax({
+            url: "@Url.Action("GetMongoPerfDataSummary", new { nodename = "NODE" })".replace("NODE", node),
+            success: function (data) {
+                var summary = data;
+
+                // Title
+                $("#title1").html("Statut du noeud " + (summary["host_fqdn"] == "localhost" ? summary["host_name"] : summary["host_fqdn"]) + " (" + (summary["node_master"] ? "primaire - " : "secondaire - ") + node + " - " + summary["node_version"] + ") durant la dernière minute (" + moment(summary["_measure"]["$date"]).format('HH:mm') + ").<div class='pull-right'>Collections: " + summary["collections_count"] + " - objects: " + summary["objects_count"] + " - requêtes réseau: " + summary["network_requests_count"] + "</div>");
+
+                // Connections
+                var p1 = $.jqplot('connection1', [[summary["connections_count"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            intervals: [100, 200, 300],
+                            intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
+                            label: 'Connexions à la base',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    }
+                });
+                plots.push(p1);
+
+                // Query count
+                var p2 = $.jqplot('queriestotal1', [[summary["queries_aggregate_count"] + summary["queries_count_count"] + summary["queries_update_count"] + summary["queries_create_count"] + summary["queries_find_count"] + summary["queries_getmore_count"] + summary["queries_insert_count"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            intervals: [10000, 20000, 30000],
+                            intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
+                            label: 'Requêtes utiles',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p2);
+
+                //IO W
+                var p3 = $.jqplot('iow', [[summary["storage_write_io_count"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            intervals: [10000, 20000, 30000],
+                            intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
+                            label: 'Nombre IO W',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p3);
+
+                //IO R
+                var p4 = $.jqplot('ior', [[summary["storage_read_io_count"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            intervals: [10000, 20000, 30000],
+                            intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
+                            label: 'Nombre IO R',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p4);
+
+                // Network in
+                var p5 = $.jqplot('networkin', [[summary["network_in_byte"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            label: 'Network IN (bytes)',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p5);
+
+                // Network out
+                var p6 = $.jqplot('networkout', [[summary["network_out_byte"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            label: 'Network OUT (bytes)',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p6);
+
+
+                // Page faults
+                var p7 = $.jqplot('pagefault1', [[summary["page_faults_count"], ], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            label: 'Page faults',
+                            labelPosition: 'bottom',
+                            intervals: [100, 600, 1000],
+                            intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
+                            padding: 0,
+                            max: 1000
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p7);
+
+                // Cache feeding
+                var p8 = $.jqplot('readintocache1', [[summary["storage_cache_read_into_cache_bytes"]], ], {
+                    seriesDefaults: {
+                        renderer: $.jqplot.MeterGaugeRenderer,
+                        rendererOptions: {
+                            showTickLabels: true,
+                            label: 'Lecture vers cache (B)',
+                            labelPosition: 'bottom',
+                            padding: 0,
+                            min: -0.00000000000000000000000000000001,
+                        },
+                        pointLabels: { show: false, }
+                    },
+                    cursor: {
+                        show: false,
+                    },
+                });
+                plots.push(p8);
+
+
+                // Storage size
+                var p9 = $.jqplot('storage1', [[[summary["data_size_byte"], 1], ], [[summary["index_size_byte"], 1]], [[summary["storage_allocated_byte"] - summary["index_size_byte"] - summary["data_size_byte"], 1]]], {
+                    title: "Volumétrie (octets)",
+                    stackSeries: true,
+                    captureRightClick: true,
+                    seriesDefaults: {
+                        renderer: $.jqplot.BarRenderer,
+                        shadowAngle: 135,
+                        rendererOptions: {
+                            barDirection: 'horizontal',
+                            highlightMouseDown: true,
+                            barMargin: 30,
+                        },
+                        pointLabels: { show: true, }
+                    },
+                    axes: {
+                        xaxis: {
+                            tickOptions: {
+                                formatter: tickRenderer,
+                            },
+                        },
+                        yaxis: {
+                            renderer: $.jqplot.CategoryAxisRenderer,
+                            ticks: [""],
+                        }
+                    },
+                    series: [
+                        { label: "data", pointLabels: { labels: ["data"] } },
+                        { label: "index", pointLabels: { labels: ["index"] } },
+                        { label: "free allocated", pointLabels: { labels: ["free allocated"] } },
+                    ],
+                    legend: {
+                        show: false,
+                        location: 'e',
+                        placement: 'inside',
+                    },
+                });
+                plots.push(p9);
+
+                // Query types
+                var p10 = $.jqplot('querytype1', [[[summary["queries_aggregate_count"], 1], ], [[summary["queries_count_count"], 1]], [[summary["queries_create_count"], 1]], [[summary["queries_find_count"], 1]], [[summary["queries_getmore_count"], 1]], [[summary["queries_insert_count"], 1]], [[summary["queries_update_count"], 1]]], {
+                    title: "Requêtes (décompte)",
+                    stackSeries: true,
+                    captureRightClick: true,
+                    seriesDefaults: {
+                        renderer: $.jqplot.BarRenderer,
+                        shadowAngle: 135,
+                        rendererOptions: {
+                            barDirection: 'horizontal',
+                            highlightMouseDown: true,
+                            barMargin: 30,
+                        },
+                        pointLabels: { show: true, }
+                    },
+                    axes: {
+                        xaxis: {
+                            tickOptions: {
+                                formatter: tickRenderer,
+                            },
+                        },
+                        yaxis: {
+                            renderer: $.jqplot.CategoryAxisRenderer,
+                            ticks: [""],
+                        }
+                    },
+                    series: [
+                        { pointLabels: { labels: ["Aggrégation"] } },
+                        { pointLabels: { labels: ["Count"] } },
+                        { pointLabels: { labels: ["Create"] } },
+                        { pointLabels: { labels: ["Find"] } },
+                        { pointLabels: { labels: ["GetMore"] } },
+                        { pointLabels: { labels: ["Insert"] } },
+                        { pointLabels: { labels: ["Update"] } },
+                    ],
+                    legend: {
+                        show: false,
+                        location: 'e',
+                        placement: 'inside',
+                    },
+                });
+                plots.push(p10);
+
+
+                // Memory
+                var p11 = $.jqplot('mem1', [[[summary["storage_cache_used_bytes"], 1], ], [[summary["mem_resident_bytes"] - summary["storage_cache_used_bytes"], 1]], [[summary["mem_virtual_bytes"] - summary["mem_resident_bytes"], 1]], [[summary["storage_cache_max_bytes"] - summary["storage_cache_used_bytes"], 1]], ], {
+                    title: "Mémoire (octets)",
+                    stackSeries: true,
+                    captureRightClick: true,
+                    seriesDefaults: {
+                        renderer: $.jqplot.BarRenderer,
+                        shadowAngle: 135,
+                        rendererOptions: {
+                            barDirection: 'horizontal',
+                            highlightMouseDown: true,
+                            barMargin: 30,
+                        },
+                        pointLabels: { show: true, }
+                    },
+                    axes: {
+                        xaxis: {
+                            tickOptions: {
+                                formatter: tickRenderer,
+                            },
+                        },
+                        yaxis: {
+                            renderer: $.jqplot.CategoryAxisRenderer,
+                            ticks: [""],
+                        }
+                    },
+                    series: [
+                        { pointLabels: { labels: ["cache WT utilisé"] } },
+                        { pointLabels: { labels: ["moteur"] } },
+                        { pointLabels: { labels: ["virtuel non résident"] } },
+                        { pointLabels: { labels: ["cache WT non utilisé"] } },
+                    ],
+                    legend: {
+                        show: false,
+                        location: 'e',
+                        placement: 'inside',
+                    },
+                });
+                plots.push(p11);
+            }
+        });
+
+    }
+
+</script>
+<script>
+    var slowData = null;
+
+    $(document).ready(function () {
+        refreshSlow();
+    });
+
+    function detail(id) {
+        alert(JSON.stringify(slowData[id], null, 2));
+    }
+
+    function refreshSlow() {
+        var div = $("#slow");
+        div.empty();
+
+        $.ajax({
+            url: "@Url.Action("GetMongoLongQueries", new { count = 15 })",
+            success: function (data) {
+                slowData = data;
+                if (slowData) {
+                    var i = 0;
+                    $.each(slowData, function () {
+                        this["id"] = i;
+                        var r = "<tr>";
+                        r += "<td onclick='detail(" + i + ");'><a>" + moment(this["ts"]["$date"]).format('DD/MM HH:mm:ss') + "</a></td>";
+                        r += "<td>" + this["millis"] + "</td>";
+                        r += "<td>" + this["client"] + "</td>";
+                        r += "<td>" + this["op"] + "</td>";
+                        r += "<td>" + this["ns"] + "</td>";
+                        r += "<td>" + (this["docsExamined"] ? this["docsExamined"] : "") + "</td>";
+                        r += "<td>" + (this["nModified"] ? this["nModified"] : "") + "</td>";
+                        r += "<td>" + (this["ninserted"] ? this["ninserted"] : "") + "</td>";
+                        r += "<td>" + (this["nreturned"] ? this["nreturned"] : "") + "</td>";
+                        r += "</tr>";
+                        div.append(r);
+                        i++;
+                    });
+
+                }
+            }
+        });
+
+
+    }
+
+</script>

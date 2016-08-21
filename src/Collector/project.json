@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0-*",
+  "buildOptions": {
+    "emitEntryPoint": true,
+    "copyToOutput": "settings.json"
+  },
+
+  "dependencies": {
+    "Microsoft.Extensions.Configuration.Binder": "1.0.0",
+    "Microsoft.Extensions.Configuration.Json": "1.0.0",
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0",
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0"
+    },
+    "MongoDB.Driver": "2.3.0-beta1",
+    "System.Threading.Timer": "4.0.1",
+    "NLog.Extensions.Logging": "1.0.0-*"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+  },
+
+  "publishOptions": {
+    "include": [ "settings.json", "nlog.config" ]
+  }
+
+}

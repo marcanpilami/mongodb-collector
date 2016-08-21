@@ -1,0 +1,15 @@
+[Unit]
+Description=performance data collector for MongoDB instances
+Documentation=http://github.com/marcanpilami/mongodb-collector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=${dotnetPath} /opt/mongodb-collector/Collector/Collector.dll /etc/mongodb-collector/mongodb-collector-collector.conf
+EnvironmentFile=-/etc/sysconfig/mongodb-collector
+Restart=on-failure
+User=collector
+
+[Install]
+WantedBy=multi-user.target

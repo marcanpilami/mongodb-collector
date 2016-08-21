@@ -1,0 +1,358 @@
+﻿{
+  "RefreshPeriodSecond": 60,
+  "RefreshConfigurationMinute": 10,
+
+  "DetailCollectionName": "mongoperf_detail",
+  "DetailCollectionMaxSizeMb": 100,
+  "SummaryCollectionName": "mongoperf_summary",
+
+  "EnableZabbixAgent": true,
+  "ZabbixAgentListeningInterface": "0.0.0.0",
+  "ZabbixAgentListeningPort": 10049,
+
+  "Connections": [
+    {
+      "ConnectionString": "mongodb://192.168.13.54:27017?wtimeout=5000&journal=false",
+      "DatabaseName": "admin"
+    }
+  ],
+
+  "Items": [
+    {
+      "Path": "serverStatus/metrics/commands/aggregate/total",
+      "JsonUniqueName": "queries_aggregate_count",
+      "Mode": "diff",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/count/total",
+      "JsonUniqueName": "queries_count_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/create/total",
+      "JsonUniqueName": "queries_create_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/find/total",
+      "JsonUniqueName": "queries_find_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/getMore/total",
+      "JsonUniqueName": "queries_getmore_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/insert/total",
+      "JsonUniqueName": "queries_insert_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/metrics/commands/update/total",
+      "JsonUniqueName": "queries_update_count",
+      "InSummary": true
+    },
+
+
+
+    {
+      "Path": "serverStatus/mem/resident",
+      "JsonUniqueName": "mem_resident_bytes",
+      "Mode": "value",
+      "Multiplier": 1048576,
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/mem/virtual",
+      "JsonUniqueName": "mem_virtual_bytes",
+      "Mode": "value",
+      "Multiplier": 1048576,
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/extra_info/heap_usage_bytes",
+      "JsonUniqueName": "mem_heap_bytes",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/extra_info/page_faults",
+      "JsonUniqueName": "page_faults_count",
+      "InSummary": true
+    },
+
+
+    {
+      "Path": "serverStatus/wiredTiger/cache/bytes currently in the cache",
+      "JsonUniqueName": "storage_cache_used_bytes",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/wiredTiger/cache/bytes read into cache",
+      "JsonUniqueName": "storage_cache_read_into_cache_bytes",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/wiredTiger/cache/bytes written from cache",
+      "JsonUniqueName": "storage_cache_written_from_cache_bytes",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/wiredTiger/cache/maximum bytes configured",
+      "JsonUniqueName": "storage_cache_max_bytes",
+      "Mode": "value",
+      "InSummary": true
+    },
+
+
+    {
+      "Path": "serverStatus/wiredTiger/connection/total read I//Os",
+      "JsonUniqueName": "storage_read_io_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/wiredTiger/connection/total write I//Os",
+      "JsonUniqueName": "storage_write_io_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/wiredTiger/block-manager/blocks read",
+      "JsonUniqueName": "storage_blocks_read_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/block-manager/blocks written",
+      "JsonUniqueName": "storage_blocks_written_count"
+    },
+
+    {
+      "Path": "serverStatus/wiredTiger/log/log write operations",
+      "JsonUniqueName": "log_write_operations_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/log/log sync operations",
+      "JsonUniqueName": "log_sync_operations_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/log/log flush operations",
+      "JsonUniqueName": "log_flush_operations_count"
+    },
+
+    {
+      "Path": "serverStatus/wiredTiger/session/open cursor count",
+      "JsonUniqueName": "open_cursors_count",
+      "Mode": "value"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/session/open session count",
+      "JsonUniqueName": "open_sessions_count",
+      "Mode": "value"
+    },
+
+    {
+      "Path": "serverStatus/wiredTiger/transaction/transaction begins",
+      "JsonUniqueName": "transaction_begins_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/transaction/transaction checkpoint total time (msecs)",
+      "JsonUniqueName": "transaction_checkpoint_time_ms"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/transaction/transaction checkpoints",
+      "JsonUniqueName": "transaction_checkpoints_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/transaction/transactions committed",
+      "JsonUniqueName": "transaction_commits_count"
+    },
+    {
+      "Path": "serverStatus/wiredTiger/transaction/transactions rolled back",
+      "JsonUniqueName": "transaction_rollbacks_count"
+    },
+
+    {
+      "Path": "serverStatus/network/bytesIn",
+      "JsonUniqueName": "network_in_byte",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/network/bytesOut",
+      "JsonUniqueName": "network_out_byte",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/network/numRequests",
+      "JsonUniqueName": "network_requests_count",
+      "InSummary": true
+    },
+    {
+      "Path": "serverStatus/connections/current",
+      "JsonUniqueName": "connections_count",
+      "Mode": "value",
+      "InSummary": true
+    },
+
+    {
+      "Path": "serverStatus/uptime",
+      "JsonUniqueName": "uptime",
+      "Mode": "value",
+      "InSummary": true
+    },
+
+
+    {
+      "Path": "serverStatus/locks/Global/acquireCount/r",
+      "JsonUniqueName": "lock_global_shared_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Global/acquireWaitCount/r",
+      "JsonUniqueName": "lock_global_shared_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Global/timeAcquiringMicros/r",
+      "JsonUniqueName": "lock_global_shared_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Global/deadlockCount/r",
+      "JsonUniqueName": "lock_global_shared_intent_deadlock_count"
+    },
+    {
+      "Path": "serverStatus/locks/Global/acquireCount/w",
+      "JsonUniqueName": "lock_global_exclusive_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Global/acquireWaitCount/w",
+      "JsonUniqueName": "lock_global_exclusive_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Global/timeAcquiringMicros/w",
+      "JsonUniqueName": "lock_global_exclusive_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Global/deadlockCount/w",
+      "JsonUniqueName": "lock_global_exclusive_intent_deadlock_count"
+    },
+
+
+    {
+      "Path": "serverStatus/locks/Database/acquireCount/r",
+      "JsonUniqueName": "lock_database_shared_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Database/acquireWaitCount/r",
+      "JsonUniqueName": "lock_database_shared_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Database/timeAcquiringMicros/r",
+      "JsonUniqueName": "lock_database_shared_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Database/deadlockCount/r",
+      "JsonUniqueName": "lock_database_shared_intent_deadlock_count"
+    },
+    {
+      "Path": "serverStatus/locks/Database/acquireCount/w",
+      "JsonUniqueName": "lock_database_exclusive_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Database/acquireWaitCount/w",
+      "JsonUniqueName": "lock_database_exclusive_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Database/timeAcquiringMicros/w",
+      "JsonUniqueName": "lock_database_exclusive_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Database/deadlockCount/w",
+      "JsonUniqueName": "lock_database_exclusive_intent_deadlock_count"
+    },
+
+
+
+    {
+      "Path": "serverStatus/locks/Collection/acquireCount/r",
+      "JsonUniqueName": "lock_collection_shared_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Collection/acquireWaitCount/r",
+      "JsonUniqueName": "lock_collection_shared_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Collection/timeAcquiringMicros/r",
+      "JsonUniqueName": "lock_collection_shared_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Collection/deadlockCount/r",
+      "JsonUniqueName": "lock_collection_shared_intent_deadlock_count"
+    },
+    {
+      "Path": "serverStatus/locks/Collection/acquireCount/w",
+      "JsonUniqueName": "lock_collection_exclusive_intent_count"
+    },
+    {
+      "Path": "serverStatus/locks/Collection/acquireWaitCount/w",
+      "JsonUniqueName": "lock_collection_exclusive_intent_wait_count"
+    },
+    {
+      "Path": "serverStatus/locks/Collection/timeAcquiringMicros/w",
+      "JsonUniqueName": "lock_collection_exclusive_intent_wait_s",
+      "Multipler": 0.000001
+    },
+    {
+      "Path": "serverStatus/locks/Collection/deadlockCount/w",
+      "JsonUniqueName": "lock_collection_exclusive_intent_deadlock_count"
+    },
+
+
+    {
+      "Path": "dbStats/collections",
+      "JsonUniqueName": "collections_count",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "dbStats/objects",
+      "JsonUniqueName": "objects_count",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "dbStats/dataSize",
+      "JsonUniqueName": "data_size_byte",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "dbStats/storageSize",
+      "JsonUniqueName": "storage_allocated_byte",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "dbStats/indexes",
+      "JsonUniqueName": "index_count",
+      "Mode": "value"
+    },
+    {
+      "Path": "dbStats/indexSize",
+      "JsonUniqueName": "index_size_byte",
+      "Mode": "value",
+      "InSummary": true
+    }
+
+
+  ],
+
+  "Collections": {
+    "Include": [ "journey", "progress" ]
+  }
+
+
+}
