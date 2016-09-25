@@ -29,6 +29,7 @@ namespace agent
 
         static void Main(string[] args)
         {
+            Logger.Info("Starting agent");
             if (args.Length > 0)
             {
                 ConfigPath = args[0];

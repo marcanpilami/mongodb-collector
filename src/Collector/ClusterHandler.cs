@@ -17,21 +17,13 @@ namespace Collector
     {
         private static Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly Configuration cfg;
-        private readonly String cnx;
-
         private readonly List<MongodPoller> pollers = new List<MongodPoller>();
-
-        private readonly MongoClient ClusterAnalysisClient;
 
         internal ClusterHandler(Configuration cfg, String cnx)
         {
-            this.cfg = cfg;
-            this.cnx = cnx;
-
             Logger.Info("Analysing MongoDB cluster at {0}", cnx);
 
-            ClusterAnalysisClient = new MongoClient(cnx);
+            var ClusterAnalysisClient = new MongoClient(cnx);
             IMongoDatabase tmp = ClusterAnalysisClient.GetDatabase("admin");
 
             var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
