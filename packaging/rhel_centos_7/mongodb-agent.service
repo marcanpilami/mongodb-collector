@@ -6,8 +6,9 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/opt/mongodb-collector/Collector/Collector /etc/mongodb-collector/mongodb-collector-collector.conf
-EnvironmentFile=-/etc/sysconfig/mongodb-collector
+ExecStart=/opt/mongodb-agent/Collector /etc/mongodb-agent/mongodb-agent.conf
+EnvironmentFile=-/etc/sysconfig/mongodb-agent
+WorkingDirectory=/opt/mongodb-agent
 Restart=on-failure
 User=collector
 
