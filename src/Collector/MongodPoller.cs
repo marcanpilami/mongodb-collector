@@ -104,6 +104,30 @@ namespace monitoringexe
             t.Dispose();
         }
 
+        private async Task<BsonDocument> GetAllDatabaseStats()
+        {
+            var dbs = await AnalysisAdminDatabase.RunCommandAsync((new BsonDocumentCommand<BsonDocument>(new BsonDocument("listDatabases", 1))));
+            BsonDocument res = null;
+            foreach (var db in dbs["databases"].AsBsonArray)
+            {
+                IMongoDatabase idb = ClientAnalysis.GetDatabase(db["name"].AsString);
+                var stats = await idb.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
+
+                if (res == null)
+                {
+                    res = stats.AsBsonDocument;
+                }
+                else
+                {
+                    foreach (var key in stats.AsBsonDocument.Where(k => k.Name != "db"))
+                    {
+                        res[key.Name] = res[key.Name].ToLong() + key.Value.ToLong();
+                    }
+                }
+            }
+            return res;
+        }
+
         private async void Poll(object data)
         {
             MappedDiagnosticsContext.Set("Host", this.Hostname);
@@ -114,7 +138,7 @@ namespace monitoringexe
             var loopTimeHour = loopTime.AddMinutes(-loopTime.Minute).AddSeconds(-loopTime.Second).AddMilliseconds(-loopTime.Millisecond);
             BsonDocument newTop = await AnalysisAdminDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("top", 1)));
             BsonDocument newServerStatus = await AnalysisDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("serverStatus", 1)));
-            BsonDocument newServerStats = await AnalysisDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
+            BsonDocument newDatabaseStats = await GetAllDatabaseStats();
             BsonDocument master = AnalysisDatabase.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
 
             var updateSummary = Builders<BsonDocument>.Update.CurrentDate("_measure").Set("node", ClientAnalysis.Settings.Server.Host);
@@ -136,7 +160,7 @@ namespace monitoringexe
                         break;
                     case "dbStats":
                         tmpOld = null;
-                        tmpNew = newServerStats;
+                        tmpNew = newDatabaseStats;
                         break;
                     default:
                         Logger.Warn("unknown path root {0}, item [{1}] will be ignored", i.Root, i.Path);
@@ -152,7 +176,7 @@ namespace monitoringexe
                     }
                     res = tmpNew.ToLong();
 
-                    // If diff mode, substract the preivous result if any (ignore if no previous result).
+                    // If diff mode, substract the previous result if any (ignore if no previous result).
                     if (i.Mode == ItemMode.diff && tmpOld == null)
                     {
                         // First loop

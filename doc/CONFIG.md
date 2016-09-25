@@ -71,10 +71,10 @@ Each item may have different parameters:
 
 #### Item path
 
-This service can fetch values from three different documents inside a MongoDB instance:
-* top 
-* serverStatus
-* dbStats
+This service can fetch values from three different documents inside a MongoDB instance(see MongoDb doc on these commands for details):
+* top: a few activity indicators
+* serverStatus: global instance statistics (by far the most interesting document).
+* dbStats: per-database statistics - the collector will sum the results of all databases.
 
 These documents are complex and we only need to extract a few values from them. These items are deignated by
 * a root, that is one of the documents listed above
