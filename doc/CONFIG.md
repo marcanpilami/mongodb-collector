@@ -6,15 +6,13 @@ Main structure:
     "RefreshPeriodSecond": 60,
     "RefreshConfigurationMinute": 10,
 
-    "Connections": [
-        {
-            "ConnectionString": "mongodb://localhost:27017?wtimeout=5000&journal=false&replicaSet=rsname",
-        }
+    "MonitoredConnectionStrings": [
+        "ConnectionString": "mongodb://localhost:27017?wtimeout=5000&journal=false&replicaSet=rsname",
     ],
 
-    TargetConnection: {
-        "ConnectionString": "mongodb://192.168.13.54:27017?wtimeout=5000&journal=false",
-        "DatabaseName": "mydb",
+    ResultsStorageConnection: {
+        "ConnectionString": "mongodb://localhost:27017?wtimeout=5000&journal=false&replicaSet=rsname",
+        "DatabaseName": "datacollector",
     },
 
     "Items": [
@@ -39,7 +37,7 @@ RefreshPeriodSecond: for later use. Should be left at 60 seconds for now.
 
 RefreshConfigurationMinute: the service will re-read its configuration file (items section only) every RefreshConfigurationMinute minutes. So there is no need to restart the service after an item configuration change.
 
-### Connections
+### MonitoredConnectionStrings
 
 This section contains all the MongoDB clusters or single instances that should be monitored. If monitoring a replica set, a single connection is required, and 
 the program will automatically connect to all nodes. Do not forget the "replicaSet" parameter in your connection string in that case.
@@ -49,12 +47,15 @@ For SECONDARY nodes, the connection will be read only.
 For PRIMARY nodes, three collections will be added containing the monitoring data for the whole replica set.
 
 The different parameters that can be set:
-* ConnectionString - compulsory - a standard MongoDB connection string
+* ConnectionString - compulsory - a standard MongoDB connection string. It will usually be of on these forms:
+  * Single instance without authentication: "mongodb://mg1.domain.com:27017"
+  * Replica set without authentication: "mongodb://mg1.domain.com:27017,mg2.domain.com:27017?replicaSet=myreplicaset"
+  * Single instance with authentication (user defined in the admin DB): "mongodb://username:password@mg1.domain.com:27017/admin
+  * Replica set with authentication: "mongodb://username:password@mg1.domain.com:27017/admin?replicaSet=myreplicaset"
 
-An optional item, TargetConnection can be used to specify where to store the data. By default, 
-the system will store the data inside the monitored databases themselves. This option allows to centralize
-the data and therefore the publication of the results. It has the same syntax as the other connections, with an additional option "DatabaseName"
-designating the database in which to store the data. It is not set by default.
+### ResultsStorageConnection
+
+This specifies where the collected data should be stored. It can be the inside one of the monitored instances.
 
 ### Items
 

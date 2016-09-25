@@ -39,7 +39,7 @@ namespace Collector
                 listener.Start();
                 AcceptClients(); // Fire and forget. Not an issue/
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.Warn("Zabbix agent has failed to start", ex);
             }
@@ -226,9 +226,9 @@ namespace Collector
                     host = key.Split('_')[0];
                     port = key.Split('_')[1];
                 }
-                var cnx = this.cfg.Connections.Single(c => c.ConnectionString.Contains(host) && c.ConnectionString.Contains(":" + port)); // throws exception if missing
+                var cnx = this.cfg.MonitoredConnectionStrings.Single(c => c.Contains(host) && c.Contains(":" + port)); // throws exception if missing
 
-                this.Connexions[key] = new MongoClient(cnx.ConnectionString + "&connect=direct");
+                this.Connexions[key] = new MongoClient(cnx + "&connect=direct");
                 return this.Connexions[key].GetDatabase(database);
             }
         }
@@ -237,7 +237,7 @@ namespace Collector
         {
             // For now, hosts come from configuration.
             String res = "{ \"data\": [";
-            res += string.Join(",", cfg.Connections.Select(c => " { \"{#NODEKEY}\":\"" + c.NodeName.Replace(":", "_") + "\"}"));
+            //TODO: res += string.Join(",", cfg.MonitoredConnectionStrings.Select(c => " { \"{#NODEKEY}\":\"" + c.NodeName.Replace(":", "_") + "\"}"));
             res += "]}";
 
             return res;
@@ -247,8 +247,8 @@ namespace Collector
         {
             String res = "{ \"data\": [";
             List<String> dbs = new List<string>();
-
-            foreach (Connection cnx in cfg.Connections)
+            //TODO: mlk
+            /*foreach (Connection cnx in cfg.Connections)
             {
                 var a = GetDatabase(cnx.NodeName);
                 var list = await a.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("listDatabases", 1)));
@@ -259,7 +259,7 @@ namespace Collector
             }
 
             res += string.Join(",", dbs);
-            res += "]}";
+            res += "]}";*/
 
             return res;
         }

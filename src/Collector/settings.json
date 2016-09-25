@@ -10,12 +10,14 @@
   "ZabbixAgentListeningInterface": "0.0.0.0",
   "ZabbixAgentListeningPort": 10049,
 
-  "Connections": [
-    {
-      "ConnectionString": "mongodb://192.168.13.54:27017?wtimeout=5000&journal=false",
-      "DatabaseName": "admin"
-    }
+  "MonitoredConnectionStrings": [
+    "mongodb://localhost:27017"
   ],
+
+  "ResultsStorageConnection": {
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "datacollector"
+  },
 
   "Items": [
     {

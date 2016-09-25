@@ -53,21 +53,21 @@ namespace monitoringexe
 
             var master = AnalysisDatabase.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
             Logger.Info("Monitored database is master: {0}", master["ismaster"].AsBoolean);
-            if (cfg.TargetConnection == null && master["ismaster"].AsBoolean)
+            if (cfg.ResultsStorageConnection == null && master["ismaster"].AsBoolean)
             {
                 TargetDatabase = AnalysisDatabase;
                 Logger.Info("All data will be stored inside the monitored database itself");
             }
-            else if (cfg.TargetConnection == null)
+            else if (cfg.ResultsStorageConnection == null)
             {
                 ClientTarget = new MongoClient("mongodb://" + master["primary"].AsString + "?replicaSet=" + master["setName"]);
                 TargetDatabase = ClientTarget.GetDatabase(this.DbName);
                 Logger.Info("All data will be stored inside the monitored database itself, but as the monitored db is a slave replica, all data will be sent to instance {0} instead", master["primary"].AsString);
             }
-            else if (cfg.TargetConnection != null)
+            else if (cfg.ResultsStorageConnection != null)
             {
-                ClientTarget = new MongoClient(cfg.TargetConnection.ConnectionString);
-                TargetDatabase = ClientTarget.GetDatabase(cfg.TargetConnection.DatabaseName);
+                ClientTarget = new MongoClient(cfg.ResultsStorageConnection.ConnectionString);
+                TargetDatabase = ClientTarget.GetDatabase(cfg.ResultsStorageConnection.DatabaseName);
                 Logger.Info("All data will be sent to a specific database");
             }
 
@@ -96,7 +96,7 @@ namespace monitoringexe
             t = new Timer(Poll, null, 0, Cfg.RefreshPeriodSecond * 1000);
         }
 
-        public MongodPoller(Configuration cfg, String hostAndPort) : this(cfg, new MongoClient(String.Format("mongodb://{0}?wtimeout=5000&journal=false&connect=direct", hostAndPort)))
+        public MongodPoller(Configuration cfg, String conStr) : this(cfg, new MongoClient(conStr))
         { }
 
         internal void Stop()

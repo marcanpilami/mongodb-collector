@@ -1,5 +1,26 @@
 # Installation
 
+## 0. Configuration on the database instances
+
+If authentication is disabled, there is nothing to do on the monitored instances.
+
+Otherwise, there are two instance families:
+* the monitored instances. You need an account on the admin database with the "clusterMonitor" role on the "admin" database. This will give it enough permissions to monotor all databases inside the instance.
+* the database which will store the collected data (if collection is enabled). You need a user with "readWrite" role on that database (named by default datacollector - but it can be any database).
+
+It is perfectly possible to use the same user for both. The following CLI script will create such a user (this is an example - you are free to create it or reuse an existing user as you like):
+
+```
+use admin
+db.createUser(
+  {
+    user: "monitoring",
+    pwd: "sdmlk09808kjdfllkj-",
+    roles: [ { role: "clusterMonitor", db: "admin" },  { role: "readWrite", db: "datacollector" } ]
+  }
+)
+```
+
 ## 1. Linux
 
 On Linux, the two parts of the program (the collector itself, as well as the self-hosted web application) 
@@ -25,7 +46,8 @@ wget https://github.com/marcanpilami/mongodb-collector/releases/download/${versi
 yum install mongodb-collector-${verion}-1.el7.x86_64.rpm
 ```
 
-Go to /etc/mongodb-collector and edit the connection strings inside the two .conf files, the publisher's URL and any other value you wish (see configuration page for the meaning of configuration items).
+Go to /etc/mongodb-collector and edit the connection strings (and if needed login and password) inside the two .conf files, 
+the publisher's URL and any other value you wish (see configuration page for the meaning of configuration items).
 
 Then you can enable the collector and the publisher:
 ```

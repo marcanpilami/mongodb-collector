@@ -10,8 +10,8 @@ namespace monitoringexe
     {
         public int RefreshPeriodSecond { get; set; } = 60;
         public int RefreshConfigurationMinute { get; set; } = 1;
-        public Connection TargetConnection { get; set; } = null;
-        public List<Connection> Connections { get; private set; } = new List<Connection>();
+        public Connection ResultsStorageConnection { get; set; } = null;
+        public List<String> MonitoredConnectionStrings { get; private set; } = new List<String>();
         public List<Item> Items { get; set; } = new List<Item>();
         public List<CollectionContainer> Collections { get; set; } = new List<CollectionContainer>();
         public String DetailCollectionName { get; set; } = "mongoperf_detail";
@@ -26,7 +26,6 @@ namespace monitoringexe
     {
         public String ConnectionString { get; set; }
         public String DatabaseName { get; set; }
-        public String ReplicaSetName { get; set; } = null;
 
         public String NodeName
         {

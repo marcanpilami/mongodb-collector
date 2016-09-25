@@ -47,7 +47,7 @@ namespace monitoringexe
         {
             LoadConfiguration();
             clusters = new List<ClusterHandler>();
-            foreach (Connection cnx in Configuration.Connections)
+            foreach (String cnx in Configuration.MonitoredConnectionStrings)
             {
                 clusters.Add(new ClusterHandler(Configuration, cnx));
             }
@@ -82,7 +82,7 @@ namespace monitoringexe
             var config = builder.Build();
             Configuration.Items.Clear();
             Configuration.Collections.Clear();
-            Configuration.Connections.Clear();
+            Configuration.MonitoredConnectionStrings.Clear();
             config.Bind(Configuration);
         }
 

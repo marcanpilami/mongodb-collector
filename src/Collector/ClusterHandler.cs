@@ -17,20 +17,20 @@ namespace Collector
         private static Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly Configuration cfg;
-        private readonly Connection cnx;
+        private readonly String cnx;
 
         private readonly List<MongodPoller> pollers = new List<MongodPoller>();
 
         private readonly MongoClient ClusterAnalysisClient;
 
-        internal ClusterHandler(Configuration cfg, Connection cnx)
+        internal ClusterHandler(Configuration cfg, String cnx)
         {
             this.cfg = cfg;
             this.cnx = cnx;
 
-            Logger.Info("Analysing MongoDB cluster at {0}", cnx.ConnectionString);
+            Logger.Info("Analysing MongoDB cluster at {0}", cnx);
 
-            ClusterAnalysisClient = new MongoClient(cnx.ConnectionString);
+            ClusterAnalysisClient = new MongoClient(cnx);
             IMongoDatabase tmp = ClusterAnalysisClient.GetDatabase("admin");
 
             var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
@@ -46,10 +46,20 @@ namespace Collector
                 // Replica set: create a poller per node.
                 Logger.Info("Replica set configuration");
 
+                String auth = null;
+                if (cnx.Split('@').Length == 2)
+                {
+                    auth = cnx.Split('@')[0].Replace("mongodb://", "");
+                }
                 var rsStatus = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
                 foreach (var member in rsStatus["members"].AsBsonArray)
                 {
-                    var y = new MongodPoller(cfg, member["name"].AsString); // "name" is actually host:port.
+                    String conStr = String.Format("mongodb://{0}?wtimeout=5000&journal=false&connect=direct", member["name"].AsString);
+                    if (auth != null)
+                    {
+                        conStr = String.Format("mongodb://{0}@{1}?wtimeout=5000&journal=false&connect=direct", auth, member["name"].AsString);
+                    }
+                    var y = new MongodPoller(cfg, conStr); // "name" is actually host:port.
                     pollers.Add(y);
                 }
             }
