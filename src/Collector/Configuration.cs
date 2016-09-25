@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace monitoringexe
+namespace agent
 {
-    class Configuration
+    public class Configuration
     {
         public Boolean EnableDataCollection { get; set; } = true;
         public int RefreshPeriodSecond { get; set; } = 60;
@@ -21,9 +21,12 @@ namespace monitoringexe
         public bool EnableZabbixAgent { get; set; } = true;
         public String ZabbixAgentListeningInterface { get; set; } = "localhost";
         public int ZabbixAgentListeningPort { get; set; } = 10051;
+
+        public Boolean EnableWebPublishing { get; set; } = true;
+
     }
 
-    class Connection
+    public class Connection
     {
         public String ConnectionString { get; set; }
         public String DatabaseName { get; set; }
@@ -44,7 +47,7 @@ namespace monitoringexe
         }
     }
 
-    class Item
+    public class Item
     {
         public String Path { get; set; }
         public String JsonUniqueName { get; set; }
@@ -63,13 +66,13 @@ namespace monitoringexe
         }
     }
 
-    class CollectionContainer
+    public class CollectionContainer
     {
         public List<String> Include { get; set; } = new List<string>();
         public List<String> Exclude { get; set; } = new List<string>();
     }
 
-    enum ItemMode
+    public enum ItemMode
     {
         diff, value
     }

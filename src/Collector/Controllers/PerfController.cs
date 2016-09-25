@@ -2,13 +2,13 @@
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Publisher;
+using monitoringexe;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace admin.Controllers
+namespace agent.web
 {
     public class PerfController : Controller
     {
@@ -22,8 +22,8 @@ namespace admin.Controllers
         public PerfController(IOptions<Configuration> cfg)
         {
             this.config = cfg;
-            this.client = new MongoClient(cfg.Value.MongoDbUrl);
-            this.database = client.GetDatabase(cfg.Value.MongoDbName);
+            this.client = new MongoClient(cfg.Value.ResultsStorageConnection.ConnectionString);
+            this.database = client.GetDatabase(cfg.Value.ResultsStorageConnection.DatabaseName);
 
             this.mongo_detail = database.GetCollection<BsonDocument>(cfg.Value.DetailCollectionName, new MongoCollectionSettings { ReadPreference = ReadPreference.SecondaryPreferred });
             this.mongo_summary = database.GetCollection<BsonDocument>(cfg.Value.SummaryCollectionName, new MongoCollectionSettings { ReadPreference = ReadPreference.SecondaryPreferred });

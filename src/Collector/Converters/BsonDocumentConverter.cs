@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace admin.Converters
+namespace agent.web
 {
     public class BsonDocumentConverter : JsonConverter
     {

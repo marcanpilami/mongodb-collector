@@ -1,4 +1,7 @@
-﻿using Collector;
+﻿using agent.web;
+using agent.zabbix;
+using Collector;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.PlatformAbstractions;
 using MongoDB.Bson;
@@ -11,12 +14,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace monitoringexe
+namespace agent
 {
     public static class Program
     {
         private static Logger Logger = LogManager.GetCurrentClassLogger();
         internal static readonly Configuration Configuration = new Configuration();
+        internal static IConfigurationRoot Section;
         private static List<ClusterHandler> clusters;
         private static String ConfigPath = null;
         private static ZabbixAgent agent;
@@ -46,6 +50,20 @@ namespace monitoringexe
         public static void Start()
         {
             LoadConfiguration();
+
+            if (Configuration.EnableWebPublishing && Configuration.EnableDataCollection)
+            {
+                var host = new WebHostBuilder()
+                   .UseConfiguration(Section)
+                   .UseKestrel()
+                   .UseContentRoot(Directory.GetCurrentDirectory())
+                   //.UseIISIntegration()
+                   .UseStartup<Startup>()
+                   .Build();
+
+                host.Start();
+            }
+
             clusters = new List<ClusterHandler>();
             if (Configuration.EnableDataCollection)
             {
@@ -82,11 +100,11 @@ namespace monitoringexe
             {
                 builder = builder.AddJsonFile("settings.json");
             }
-            var config = builder.Build();
+            Section = builder.Build();
             Configuration.Items.Clear();
             Configuration.Collections.Clear();
             Configuration.MonitoredConnectionStrings.Clear();
-            config.Bind(Configuration);
+            Section.Bind(Configuration);
         }
 
         private static void T_Elapsed(object state)

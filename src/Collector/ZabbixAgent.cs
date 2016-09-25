@@ -9,7 +9,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using NLog;
 
-namespace Collector
+namespace agent.zabbix
 {
     internal class ZabbixAgent : IDisposable
     {

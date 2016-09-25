@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using admin.Converters;
+using monitoringexe;
 
-namespace Publisher
+namespace agent.web
 {
     public class Startup
     {
@@ -18,23 +18,14 @@ namespace Publisher
 
         public Startup(IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath);
-            if (Program.ConfigPath != null)
-            {
-                builder = builder.AddJsonFile(Program.ConfigPath);
-            }
-            else
-            {
-                builder = builder.AddJsonFile("appsettings.json");
-            }
-            Configuration = builder.Build();
+            Configuration = Program.Section;
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<Configuration>(Configuration.GetSection("AppSettings"));
+            services.Configure<Configuration>(Configuration);
             services.AddMvcCore().AddJsonFormatters(j => { j.Converters.Add(new BsonDocumentConverter()); }).AddXmlSerializerFormatters().AddRazorViewEngine();
         }
 
