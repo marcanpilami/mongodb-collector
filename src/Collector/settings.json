@@ -1,10 +1,13 @@
 ﻿{
-  "RefreshPeriodSecond": 60,
-  "RefreshConfigurationMinute": 10,
-
+  "EnableDataCollection": true,
   "DetailCollectionName": "mongoperf_detail",
   "DetailCollectionMaxSizeMb": 100,
   "SummaryCollectionName": "mongoperf_summary",
+  "RefreshPeriodSecond": 60,
+  "RefreshConfigurationMinute": 10,
+
+  "EnableWebPublishing": true,
+  "server.urls": "http://0.0.0.0:5100",
 
   "EnableZabbixAgent": true,
   "ZabbixAgentListeningInterface": "0.0.0.0",
