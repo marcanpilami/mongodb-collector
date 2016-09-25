@@ -6,7 +6,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=${dotnetPath} /opt/mongodb-collector/Collector/Collector.dll /etc/mongodb-collector/mongodb-collector-collector.conf
+ExecStart=/opt/mongodb-collector/Collector/Collector /etc/mongodb-collector/mongodb-collector-collector.conf
 EnvironmentFile=-/etc/sysconfig/mongodb-collector
 Restart=on-failure
 User=collector

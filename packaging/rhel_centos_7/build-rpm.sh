@@ -16,6 +16,7 @@ version=$(grep "^  \"version" ${repoRoot}/src/Collector/project.json | cut -d':'
 echo "%_topdir ${rpmRoot}
 %_tmppath %{_topdir}/tmp
 %_version ${version}
+%debug_package %{nil}
 " >~/.rpmmacros
 
 # Distrib specifics (no dotnet repo package in centos)
@@ -26,22 +27,23 @@ then
     export dotnetPath=/usr/local/bin/dotnet
     
     echo "%_moreRequires %{nil}
-%_moreTests [ -x /usr/local/bin/dotnet ] || (echo 'dotnet is not installed' && exit 2)" >>~/.rpmmacros
+%_moreTests true" >>~/.rpmmacros
 else
     # RHEL
     export dotnetPath=/opt/rh/rh-dotnetcore10/root/usr/bin/dotnet
     
-    echo "%_moreRequires ,rh-dotnetcore10
+    echo "%_moreRequires %{nil}
 %_moreTests true" >>~/.rpmmacros
 fi
 
 # BUILD
+#scl enable rh-dotnetcore10 bash
 rm -rf $tmpDir
 mkdir -p ${publishRoot}/{Publisher,Collector}
 dotnet restore src/Publisher
-dotnet publish src/Publisher --output ${publishRoot}/Publisher --configuration Release
+dotnet publish src/Publisher --output ${publishRoot}/Publisher --configuration Release --runtime "centos.7-x64"
 dotnet restore src/Collector
-dotnet publish src/Collector --output ${publishRoot}/Collector --configuration Release
+dotnet publish src/Collector --output ${publishRoot}/Collector --configuration Release --runtime "centos.7-x64"
 
 # Create TGZ for RPMA
 tarRoot=${rpmRoot}/mongodb-collector-${version}

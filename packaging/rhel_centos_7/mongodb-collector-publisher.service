@@ -6,7 +6,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=${dotnetPath} /opt/mongodb-collector/Publisher/Publisher.dll /etc/mongodb-collector/mongodb-collector-publisher.conf
+ExecStart=/opt/mongodb-collector/Publisher/Publisher /etc/mongodb-collector/mongodb-collector-publisher.conf
 EnvironmentFile=-/etc/sysconfig/mongodb-publisher
 Restart=on-failure
 WorkingDirectory=/opt/mongodb-collector/Publisher

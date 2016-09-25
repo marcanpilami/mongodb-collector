@@ -8,9 +8,10 @@ License:	ASL 2.0
 URL:		https://github.com/marcanpilami/mongodb-collector
 Source0:	%{name}-%{version}.tar.gz
 
-BuildArch: 	noarch
+BuildArch: 	x86_64
 BuildRequires:	nodejs,systemd%{_moreRequires}
-Requires:	/usr/sbin/useradd, /usr/bin/getent, /usr/bin/true %{_moreRequires}
+Requires:	deltarpm, unzip, libunwind, gettext, libcurl-devel, openssl-devel, zlib, libicu-devel, /usr/sbin/useradd, /usr/bin/getent, /usr/bin/true %{_moreRequires}
+AutoReqProv:    no
 
 %description
 %{summary}
