@@ -208,36 +208,96 @@ namespace agent.zabbix
 
         private IMongoDatabase GetDatabase(String key, String database = "admin")
         {
+            key = key.Replace("_", ":").ToLowerInvariant();
+
             if (this.Connexions.ContainsKey(key))
             {
+                // In cache.
                 return this.Connexions[key].GetDatabase(database);
             }
             else
             {
-                string host;
-                string port;
-                if (key.Contains(":"))
+                foreach (String cnxStr in cfg.MonitoredConnectionStrings)
                 {
-                    host = key.Split(':')[0];
-                    port = key.Split(':')[1];
-                }
-                else
-                {
-                    host = key.Split('_')[0];
-                    port = key.Split('_')[1];
-                }
-                var cnx = this.cfg.MonitoredConnectionStrings.Single(c => c.Contains(host) && c.Contains(":" + port)); // throws exception if missing
+                    if (cnxStr.ToLowerInvariant().Contains(key))
+                    {
+                        this.Connexions[key] = new MongoClient(cnxStr + "&connect=direct");
+                        break;
+                    }
 
-                this.Connexions[key] = new MongoClient(cnx + "&connect=direct");
+                    var tmpClient = new MongoClient(cnxStr);
+                    IMongoDatabase tmp = tmpClient.GetDatabase("admin");
+                    var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                    if (!isMaster.Contains("hosts"))
+                    {
+                        // Not a replica set. Just a single node. Means not found.
+                        continue;
+                    }
+                    else
+                    {
+                        // Replica set.                    
+                        var rsStatus = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
+                        foreach (var member in rsStatus["members"].AsBsonArray)
+                        {
+                            var name = member["name"].AsString;
+                            if (name.ToLowerInvariant() == key)
+                            {
+                                String auth = "";
+                                if (cnxStr.Split('@').Length == 2)
+                                {
+                                    auth = cnxStr.Split('@')[0].Replace("mongodb://", "") + "@";
+                                }
+
+                                this.Connexions[key] = new MongoClient(String.Format("mongodb://{0}{1}?wtimeout=5000&journal=false&connect=direct", auth, name));
+                                break;
+                            }
+                        }
+
+                        if (this.Connexions.ContainsKey(key))
+                        {
+                            break;
+                        }
+                    }
+                }
+
                 return this.Connexions[key].GetDatabase(database);
+            }
+        }
+
+        private List<String> MonitoredNodeNames
+        {
+            get
+            {
+                List<String> monitored = new List<string>();
+                foreach (String cnx in cfg.MonitoredConnectionStrings)
+                {
+                    var tmpClient = new MongoClient(cnx);
+                    IMongoDatabase tmp = tmpClient.GetDatabase("admin");
+
+                    var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                    if (!isMaster.Contains("hosts"))
+                    {
+                        // Not a replica set. Just a single node.
+                        monitored.Add(tmpClient.Settings.Server.Host + ":" + tmpClient.Settings.Server.Port);
+                    }
+                    else
+                    {
+                        // Replica set.                    
+                        var rsStatus = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
+                        foreach (var member in rsStatus["members"].AsBsonArray)
+                        {
+                            monitored.Add(member["name"].AsString);
+                        }
+                    }
+                }
+                return monitored;
             }
         }
 
         private String DiscoverHosts()
         {
-            // For now, hosts come from configuration.
             String res = "{ \"data\": [";
-            //TODO: res += string.Join(",", cfg.MonitoredConnectionStrings.Select(c => " { \"{#NODEKEY}\":\"" + c.NodeName.Replace(":", "_") + "\"}"));
+            res += string.Join(",", MonitoredNodeNames.Select(c => " { \"{#NODEKEY}\":\"" + c.Replace(":", "_") + "\"}"));
             res += "]}";
 
             return res;
@@ -247,19 +307,20 @@ namespace agent.zabbix
         {
             String res = "{ \"data\": [";
             List<String> dbs = new List<string>();
-            //TODO: mlk
-            /*foreach (Connection cnx in cfg.Connections)
+
+
+            foreach (String nodeName in MonitoredNodeNames) // Connection cnx in cfg.Connections)
             {
-                var a = GetDatabase(cnx.NodeName);
+                var a = GetDatabase(nodeName);
                 var list = await a.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("listDatabases", 1)));
                 foreach (BsonValue db in list["databases"].AsBsonArray)
                 {
-                    dbs.Add("{ \"{#NODEKEY}\":\"" + cnx.NodeName + "\", \"{#DBNAME}\":\"" + db["name"] + "\"}");
+                    dbs.Add("{ \"{#NODEKEY}\":\"" + nodeName + "\", \"{#DBNAME}\":\"" + db["name"] + "\"}");
                 }
             }
 
             res += string.Join(",", dbs);
-            res += "]}";*/
+            res += "]}";
 
             return res;
         }
