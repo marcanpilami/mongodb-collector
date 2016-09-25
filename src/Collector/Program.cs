@@ -17,7 +17,7 @@ namespace monitoringexe
     {
         private static Logger Logger = LogManager.GetCurrentClassLogger();
         internal static readonly Configuration Configuration = new Configuration();
-        private static List<MongodPoller> pollers;
+        private static List<ClusterHandler> clusters;
         private static String ConfigPath = null;
         private static ZabbixAgent agent;
 
@@ -46,10 +46,10 @@ namespace monitoringexe
         public static void Start()
         {
             LoadConfiguration();
-            pollers = new List<MongodPoller>();
+            clusters = new List<ClusterHandler>();
             foreach (Connection cnx in Configuration.Connections)
             {
-                pollers.Add(new MongodPoller(Configuration, cnx));
+                clusters.Add(new ClusterHandler(Configuration, cnx));
             }
 
             if (Configuration.EnableZabbixAgent)
@@ -57,14 +57,14 @@ namespace monitoringexe
                 agent = new ZabbixAgent(Configuration);
             }
 
-            configTimer = new Timer(T_Elapsed, null, 0, Configuration.RefreshConfigurationMinute * 60 * 1000);
+            //configTimer = new Timer(T_Elapsed, null, 0, Configuration.RefreshConfigurationMinute * 60 * 1000);
         }
 
         public static void Stop()
         {
-            foreach (MongodPoller p in pollers)
+            foreach (ClusterHandler p in clusters)
             {
-                p.Stop();
+                p.Dispose();
             }
         }
 

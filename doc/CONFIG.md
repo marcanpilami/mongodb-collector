@@ -3,35 +3,33 @@
 Main structure:
 ```
 {
-  "RefreshPeriodSecond": 60,
-  "RefreshConfigurationMinute": 10,
+    "RefreshPeriodSecond": 60,
+    "RefreshConfigurationMinute": 10,
 
-  "Connections": [
-    {
-      "ConnectionString": "mongodb://192.168.13.54:27017?wtimeout=5000&journal=false",
-      "DatabaseName": "admin",
-      "ReplicaSetName": "rsname"
-    }
-  ],
+    "Connections": [
+        {
+            "ConnectionString": "mongodb://localhost:27017?wtimeout=5000&journal=false&replicaSet=rsname",
+        }
+    ],
 
     TargetConnection: {
         "ConnectionString": "mongodb://192.168.13.54:27017?wtimeout=5000&journal=false",
-      "DatabaseName": "mydb",
+        "DatabaseName": "mydb",
     },
 
-  "Items": [
-    {
-      "Path": "serverStatus/metrics/commands/aggregate/total",
-      "JsonUniqueName": "queries_aggregate_count",
-      "Mode": "diff",
-      "InSummary": true
-    },
-    {
-      "Path": "serverStatus/metrics/commands/count/total",
-      "JsonUniqueName": "queries_count_count",
-      "InSummary": true
-    }
-   ]
+    "Items": [
+        {
+            "Path": "serverStatus/metrics/commands/aggregate/total",
+            "JsonUniqueName": "queries_aggregate_count",
+            "Mode": "diff",
+            "InSummary": true
+        },
+        {
+            "Path": "serverStatus/metrics/commands/count/total",
+            "JsonUniqueName": "queries_count_count",
+            "InSummary": true
+        }
+    ]
 }
 ```
 
@@ -43,11 +41,8 @@ RefreshConfigurationMinute: the service will re-read its configuration file (ite
 
 ### Connections
 
-This section contains all the MongoDB nodes that should be monitored. Please note that a parameter will be added to your connection string 
-to ensure we always connect to the designated node (in a replica set, we may be redirected to another node).
-
-There should be one entry per running mongod process (and not one per database contained by on mongod
- - the collector will auto discover the databases).
+This section contains all the MongoDB clusters or single instances that should be monitored. If monitoring a replica set, a single connection is required, and 
+the program will automatically connect to all nodes. Do not forget the "replicaSet" parameter in your connection string in that case.
 
 For SECONDARY nodes, the connection will be read only.
 
@@ -55,13 +50,11 @@ For PRIMARY nodes, three collections will be added containing the monitoring dat
 
 The different parameters that can be set:
 * ConnectionString - compulsory - a standard MongoDB connection string
-* DatabaseName - compulsory - put the name of the database which should store the data. It will be created if it does not exist. Ignored if TargetConnection is used.
-* ReplicaSetName - if using a replica set.
 
 An optional item, TargetConnection can be used to specify where to store the data. By default, 
 the system will store the data inside the monitored databases themselves. This option allows to centralize
-the data and therefore the publication of the results. It has the same syntax as the other connections.
-It is not set by default.
+the data and therefore the publication of the results. It has the same syntax as the other connections, with an additional option "DatabaseName"
+designating the database in which to store the data. It is not set by default.
 
 ### Items
 

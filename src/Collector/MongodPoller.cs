@@ -18,7 +18,6 @@ namespace monitoringexe
     {
         private static Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly Connection Cnx;
         private readonly Configuration Cfg;
         private readonly Timer t;
 
@@ -41,16 +40,16 @@ namespace monitoringexe
 
         private bool firstLoop = true, secondLoop = true;
 
-        public MongodPoller(Configuration cfg, Connection cnx)
+        public MongodPoller(Configuration cfg, MongoClient client)
         {
-            Logger.Info("Connecting to {0}", cnx.ConnectionString);
+            this.Hostname = client.Settings.Server.Host + ":" + client.Settings.Server.Port; // remove port?
+            Logger.Info("Starting monitoring for database instance {0}", this.Hostname);
+
             this.Cfg = cfg;
-            this.Cnx = cnx;
-            this.ClientAnalysis = new MongoClient(cnx.ConnectionString + "&connect=direct");
-            this.AnalysisDatabase = ClientAnalysis.GetDatabase(cnx.DatabaseName);
+            this.ClientAnalysis = client;
+            this.AnalysisDatabase = ClientAnalysis.GetDatabase("admin");
             this.AnalysisAdminDatabase = ClientAnalysis.GetDatabase("admin");
-            this.Hostname = cnx.ConnectionString.Split('/')[2].Split('?')[0];
-            this.DbName = cnx.DatabaseName;
+            this.DbName = "admin";
 
             var master = AnalysisDatabase.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
             Logger.Info("Monitored database is master: {0}", master["ismaster"].AsBoolean);
@@ -62,7 +61,7 @@ namespace monitoringexe
             else if (cfg.TargetConnection == null)
             {
                 ClientTarget = new MongoClient("mongodb://" + master["primary"].AsString + "?replicaSet=" + master["setName"]);
-                TargetDatabase = ClientTarget.GetDatabase(cnx.DatabaseName);
+                TargetDatabase = ClientTarget.GetDatabase(this.DbName);
                 Logger.Info("All data will be stored inside the monitored database itself, but as the monitored db is a slave replica, all data will be sent to instance {0} instead", master["primary"].AsString);
             }
             else if (cfg.TargetConnection != null)
@@ -96,6 +95,9 @@ namespace monitoringexe
             // Go
             t = new Timer(Poll, null, 0, Cfg.RefreshPeriodSecond * 1000);
         }
+
+        public MongodPoller(Configuration cfg, String hostAndPort) : this(cfg, new MongoClient(String.Format("mongodb://{0}?wtimeout=5000&journal=false&connect=direct", hostAndPort)))
+        { }
 
         internal void Stop()
         {
