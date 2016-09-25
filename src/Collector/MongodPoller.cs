@@ -141,6 +141,13 @@ namespace monitoringexe
             BsonDocument newServerStatus = await AnalysisDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("serverStatus", 1)));
             BsonDocument newDatabaseStats = await GetAllDatabaseStats();
             BsonDocument master = AnalysisDatabase.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+            BsonDocument newReplicaSetStatus = null;
+
+            if (master.Contains("hosts"))
+            {
+                newReplicaSetStatus = await AnalysisAdminDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1)));
+                newReplicaSetStatus = newReplicaSetStatus["members"].AsBsonArray.First(b => b.AsBsonDocument.Contains("self") && b["self"].AsBoolean).AsBsonDocument;
+            }
 
             var updateSummary = Builders<BsonDocument>.Update.CurrentDate("_measure").Set("node", ClientAnalysis.Settings.Server.Host);
 
@@ -162,6 +169,10 @@ namespace monitoringexe
                     case "dbStats":
                         tmpOld = null;
                         tmpNew = newDatabaseStats;
+                        break;
+                    case "rsStatus":
+                        tmpOld = null;
+                        tmpNew = newReplicaSetStatus;
                         break;
                     default:
                         Logger.Warn("unknown path root {0}, item [{1}] will be ignored", i.Root, i.Path);

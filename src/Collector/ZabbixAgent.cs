@@ -148,6 +148,20 @@ namespace agent.zabbix
                     case "dbStats":
                         rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
                         break;
+                    case "rsStatus":
+                        BsonDocument master = db.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                        if (master.Contains("hosts"))
+                        {
+                            rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1)));
+                            rqRes = rqRes["members"].AsBsonArray.First(b => b.AsBsonDocument.Contains("self") && b["self"].AsBoolean).AsBsonDocument;
+                        }
+                        else
+                        {
+                            await SendNotSupported("item named " + key + " uses replica set status but the database is a single instance", stream);
+                            client.Dispose();
+                            return;
+                        }
+                        break;
                     default:
                         await SendNotSupported("item named " + key + " is wrong in agent configuration (non-existent root)", stream);
                         client.Dispose();

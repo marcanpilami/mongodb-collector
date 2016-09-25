@@ -350,6 +350,20 @@
       "JsonUniqueName": "index_size_byte",
       "Mode": "value",
       "InSummary": true
+    },
+
+
+    {
+      "Path": "rsStatus/state",
+      "JsonUniqueName": "replication_state",
+      "Mode": "value",
+      "InSummary": true
+    },
+    {
+      "Path": "rsStatus/health",
+      "JsonUniqueName": "replication_health",
+      "Mode": "value",
+      "InSummary": true
     }
 
 
