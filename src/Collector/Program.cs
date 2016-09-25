@@ -47,9 +47,12 @@ namespace monitoringexe
         {
             LoadConfiguration();
             clusters = new List<ClusterHandler>();
-            foreach (String cnx in Configuration.MonitoredConnectionStrings)
+            if (Configuration.EnableDataCollection)
             {
-                clusters.Add(new ClusterHandler(Configuration, cnx));
+                foreach (String cnx in Configuration.MonitoredConnectionStrings)
+                {
+                    clusters.Add(new ClusterHandler(Configuration, cnx));
+                }
             }
 
             if (Configuration.EnableZabbixAgent)

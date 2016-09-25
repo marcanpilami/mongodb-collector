@@ -37,6 +37,8 @@ RefreshPeriodSecond: for later use. Should be left at 60 seconds for now.
 
 RefreshConfigurationMinute: the service will re-read its configuration file (items section only) every RefreshConfigurationMinute minutes. So there is no need to restart the service after an item configuration change.
 
+EnableDataCollection: optional, default si true. If true, the agent will collect data every RefreshPeriodSecond and store it inside a database. If false, the agent's only interest is as a Zabbix agent (see the specific Zabbix doc).
+
 ### MonitoredConnectionStrings
 
 This section contains all the MongoDB clusters or single instances that should be monitored. If monitoring a replica set, a single connection is required, and 

@@ -8,6 +8,7 @@ namespace monitoringexe
 {
     class Configuration
     {
+        public Boolean EnableDataCollection { get; set; } = true;
         public int RefreshPeriodSecond { get; set; } = 60;
         public int RefreshConfigurationMinute { get; set; } = 1;
         public Connection ResultsStorageConnection { get; set; } = null;
