@@ -9,13 +9,10 @@
     "Microsoft.Extensions.Configuration.Binder": "1.0.0",
     "Microsoft.Extensions.Configuration.Json": "1.0.0",
     "Microsoft.Extensions.PlatformAbstractions": "1.0.0",
-    "Microsoft.NETCore.App": {
-      "type": "platform",
-      "version": "1.0.0"
-    },
-    "MongoDB.Driver": "2.3.0-beta1",
     "System.Threading.Timer": "4.0.1",
-    "NLog.Extensions.Logging": "1.0.0-*"
+    "NLog.Extensions.Logging": "1.0.0-*",
+    "Microsoft.NETCore.App": "1.0.1",
+    "MongoDB.Driver": "2.3.0"
   },
 
   "frameworks": {
