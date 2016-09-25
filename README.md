@@ -19,8 +19,7 @@ It is cut in two parts providing different services:
 
 It is extremely easy to use:    
 * Runs on Windows and Linux.
-* Packaged as RPM (Linux) and Chocolatey (Windows).
-* Its only dependency is dotnet (if you wish, you can even build yourself the project without this).
+* Packaged as RPM (Linux) and Chocolatey (Windows). It even includes the runtime it uses (dotnet core) to ease installation on all platforms.
 * Compatible both with single instances and replica sets.
 * Can be deployed either on the DB server itself, or on another machine (as it uses standard MongoDB connections).
 * Only collect the metrics you need - it is fully customizable, and provided with a default configuratin which should suit most users.

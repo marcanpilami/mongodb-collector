@@ -22,7 +22,7 @@ The second defines the interface on which to listen to. The third the port to us
 10049, which is the default Zabbix agent port (10050) minus one, so as to allow both to run alongside
 with default configuration.
 
-Inside Zabbix, import the two templates which are [here](./packaging/zabbix/zbx_export_templates.xml).
+Inside Zabbix, import the two templates which are [here](../packaging/zabbix/zbx_export_templates.xml).
 
 Define a new host for the collector (and NOT for the different MongoDB instances). APply the template named 
 "MongoDB monitor". Thanks to Zabbix' discovery mechanisms, one host per MongoDB instance will be created 

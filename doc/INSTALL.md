@@ -4,71 +4,48 @@
 
 On Linux, the two parts of the program (the collector itself, as well as the self-hosted web application) 
 are two systemd services with:
-* configuration inside /etc/mongodb-collector
-* logs inside /var/log/mongodb-collector. Logs are auto rotated every day and purged after 10 days.
-* binaries inside /opt/mongodb-collector (can be read only)
+* configuration inside /etc/mongodb-collector/
+* logs inside /var/log/mongodb-collector/. Logs are auto rotated every day and purged after 10 days.
+* binaries inside /opt/mongodb-collector/ (can be read only)
 
-The services run with a user account named 'collector' created during installation.
+The services run with a user account named 'collector' (it's a system account: uid is below 1000) created during installation.
 
-Installation is done with RPM.
-
-
-### 1.1. RHEL 7.x (not CentOS)
+Installation is done with yum.
 
 
-Everything must be run as root.
+### 1.1. RHEL 7.x and CentOS 7.x
 
-If not done already, you must enable the official .NET repository and install dotnet.
+
+Everything must be run as root. Note that you do not need anymore to enable the official .NET repository - the package contains the minimal .NET runtime.
+
+Download the RPM and run it (change the version to the one you have downloaded).
 ```
-subscription-manager repos --enable=rhel-7-server-dotnet-rpms
-yum install rh-dotnetcore10
-```
-
-Then download the RPM and run it.
-```
-wget ...
-rpm -i mongodb-collector-1.0.0-1.el7.noarch.rpm
+version="1.0.0"
+wget https://github.com/marcanpilami/mongodb-collector/releases/download/${version}/mongodb-collector-${version}-1.el7.x86_64.rpm
+yum install mongodb-collector-${verion}-1.el7.x86_64.rpm
 ```
 
 Go to /etc/mongodb-collector and edit the connection strings inside the two .conf files, the publisher's URL and any other value you wish (see configuration page for the meaning of configuration items).
 
 Then you can enable the collector and the publisher:
 ```
-systemctl enable mongodb-collector-collector
-systemctl start mongodb-collector-collector
+# Start collector/agent
+systemctl enable mongodb-collector-collector.service
+systemctl start mongodb-collector-collector.service
 
-systemctl enable mongodb-collector-publisher
-systemctl start mongodb-collector-publisher
+# Start publish web services and web dashboard
+systemctl enable mongodb-collector-publisher.service
+systemctl start mongodb-collector-publisher.service
+
+# Check
+systemctl status mongodb-collector-publisher.service
+systemctl status mongodb-collector-collector.service
 ```
 
-### 1.2. CentOS 7.x
 
-Everything must be run as root.
+### 1.2. Ubuntu 14.x+
 
-Dotnet is installed manually on CentOS (no official repository).
-```
-yum install libunwind libicu
-curl -sSL -o dotnet.tar.gz https://go.microsoft.com/fwlink/?LinkID=809131
-mkdir -p /opt/dotnet && sudo tar zxf dotnet.tar.gz -C /opt/dotnet
-ln -s /opt/dotnet/dotnet /usr/local/bin
-```
-
-Then download the RPM and run it.
-```
-wget ...
-rpm -i mongodb-collector-1.0.0-1.el7.centos.noarch.rpm
-```
-
-Go to /etc/mongodb-collector and edit the connection strings inside the two .conf files, the publisher's URL and any other value you wish (see configuration page for the meaning of configuration items).
-
-Then you can enable the collector and the publisher:
-```
-systemctl enable mongodb-collector-collector
-systemctl start mongodb-collector-collector
-
-systemctl enable mongodb-collector-publisher
-systemctl start mongodb-collector-publisher
-```
+TODO: the program is not yet packaged for this platform. You can however easily build it yourself.
 
 ## 2. Windows
 
