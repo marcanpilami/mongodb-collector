@@ -1,4 +1,4 @@
-Name:		mongodb-collector
+Name:		mongodb-agent
 Version:	%{_version}
 Release:	1%{?dist}
 Summary:	Utility to regularly store and publish performance MongoDB data
@@ -9,7 +9,7 @@ URL:		https://github.com/marcanpilami/mongodb-collector
 Source0:	%{name}-%{version}.tar.gz
 
 BuildArch: 	x86_64
-BuildRequires:	nodejs,systemd%{_moreRequires}
+BuildRequires:	nodejs,systemd
 Requires:	deltarpm, unzip, libunwind, gettext, libcurl-devel, openssl-devel, zlib, libicu-devel, /usr/sbin/useradd, /usr/bin/getent, /usr/bin/true %{_moreRequires}
 AutoReqProv:    no
 
@@ -17,8 +17,7 @@ AutoReqProv:    no
 %{summary}
 
 %prep
-# Cannot be a BuildRequires as on CentOS no RPM package for .NET
-%{_moreTests}
+# Dotnet cannot be a BuildRequires as on CentOS no RPM package for .NET
 %setup -q
 
 %build
@@ -37,17 +36,13 @@ rm -rf %{buildroot}
 /opt/%{name}
 /var/log/%{name}
 %dir %attr(750, root, collector)  %{_sysconfdir}/%{name}
-%attr(640, root, collector) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-publisher.conf
-%attr(640, root, collector) %config(noreplace) %{_sysconfdir}/%{name}/%{name}-collector.conf
+%attr(640, root, collector) %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %attr(640, root, collector) %config(noreplace) %{_sysconfdir}/%{name}/nlog.config
-%{_unitdir}/%{name}-collector.service
-%{_unitdir}/%{name}-publisher.service
+%{_unitdir}/%{name}.service
 
 %pre
-%{_moreTests}
 /usr/bin/getent passwd collector >/dev/null || (/usr/sbin/useradd -r -d /opt/%{name} -s /sbin/nologin collector >/dev/null)
-/usr/bin/systemctl stop mongodb-collector-collector >/dev/null 2>&1 || true
-/usr/bin/systemctl stop mongodb-collector-publisher >/dev/null 2>&1 || true
+/usr/bin/systemctl stop %{name}.service >/dev/null 2>&1 || true
 
 %post
 /usr/bin/systemctl daemon-reload
