@@ -24,6 +24,11 @@
 
 <div style="height:100%;">
     <div class="container-fluid">
+        <div style="margin-bottom: 8px; width: 100%; text-align: center;">
+            <h3 style="display: inline-block; height: 34px; line-height: 34px; margin-top: 5px;">Tableau de bord de l'instance MongoDB</h3>
+            <select id="filternode" class="form-control form-inline" style="display: inline; width: auto;"></select>
+        </div>
+
         <div class="panel panel-default">
             <div class="panel-heading">
                 <div class="panel-title" id="title1"></div>
@@ -57,10 +62,6 @@
                 <div class="row">
                     <div class="col-md-12">
                         <form class="form-inline" style="display: inline;">
-                            <div class="form-group">
-                                <label for="filternode">Noeud</label>
-                                <select id="filternode" class="form-control"></select>
-                            </div>
                             <div class="form-group">
                                 <label for="filterkey">Indicateur</label>
                                 <select id="filterkey" class="form-control"></select>
