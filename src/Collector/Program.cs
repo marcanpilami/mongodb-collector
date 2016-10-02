@@ -52,7 +52,7 @@ namespace agent
         {
             LoadConfiguration();
 
-            if (Configuration.EnableWebPublishing && Configuration.EnableDataCollection)
+            if (Configuration.EnableWebPublishing)
             {
                 var host = new WebHostBuilder()
                    .UseConfiguration(Section)
