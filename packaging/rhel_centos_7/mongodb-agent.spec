@@ -10,7 +10,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 BuildArch: 	x86_64
 BuildRequires:	nodejs,systemd
-Requires:	deltarpm, unzip, libunwind, gettext, libcurl-devel, openssl-devel, zlib, libicu-devel, /usr/sbin/useradd, /usr/bin/getent, /usr/bin/true 
+Requires:	unzip, libunwind, gettext, libcurl, openssl, zlib, libicu, /usr/sbin/useradd, /usr/bin/getent, /usr/bin/true 
 AutoReqProv:    no
 
 %description
