@@ -9,14 +9,14 @@ When all modules are enabled, it provides:
     * a web dashboard giving the instant health of you DB as well as the ability to query the history
     * a set of very simple web services (JSON or XML) to enable you to retrieve the data from another 
       system (Nagios, RRDB, ...)
-* A Zabbix agent, and therefore can be queried directly from Zabbix (including auto discovery).
+* A Zabbix agent, and therefore can be queried directly from Zabbix (including auto discovery) - templates are provided.
 
 It is extremely easy to use:    
 * Runs on Windows and Linux.
 * Packaged as RPM (Linux) and soon as Chocolatey (Windows). It even includes the runtime it uses (dotnet core) to ease installation on all platforms.
-* Compatible both with single instances and replica sets.
+* Compatible both with single instances and replica sets. New replicas (and removed replica) are discovered without restart or configuration change.
 * With or without database authentication.
-* Can be deployed either on the DB server itself, or on another machine (as it uses standard MongoDB connections).
+* Can be deployed either on the DB server itself, or on another machine to create a centralized monitoring system for multiple instances (as it uses standard MongoDB connections).
 * Only collect the metrics you need - it is fully customizable, and provided with a default configuratin which should suit most users.
 * All three modules are optional - once again, just select what you need.
 

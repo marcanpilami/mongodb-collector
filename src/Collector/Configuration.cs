@@ -11,6 +11,7 @@ namespace agent
         public Boolean EnableDataCollection { get; set; } = true;
         public int RefreshPeriodSecond { get; set; } = 60;
         public int RefreshConfigurationMinute { get; set; } = 1;
+        public int RefreshClusterTopologyMinute { get; set; } = 10;
         public Connection ResultsStorageConnection { get; set; } = null;
         public List<String> MonitoredConnectionStrings { get; private set; } = new List<String>();
         public List<Item> Items { get; set; } = new List<Item>();
