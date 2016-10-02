@@ -94,7 +94,7 @@ namespace monitoringexe
             }
 
             // Go
-            t = new Timer(Poll, null, 0, Cfg.RefreshPeriodSecond * 1000);
+            t = new Timer(PollSafe, null, 0, Cfg.RefreshPeriodSecond * 1000);
         }
 
         public MongodPoller(Configuration cfg, String conStr) : this(cfg, new MongoClient(conStr))
@@ -103,6 +103,18 @@ namespace monitoringexe
         internal void Stop()
         {
             t.Dispose();
+        }
+
+        private void PollSafe(object data)
+        {
+            try
+            {
+                Poll(data).Wait();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, "could not poll database " + this.Hostname + ".");
+            }
         }
 
         private async Task<BsonDocument> GetAllDatabaseStats()
@@ -129,7 +141,7 @@ namespace monitoringexe
             return res;
         }
 
-        private async void Poll(object data)
+        private async Task Poll(object data)
         {
             MappedDiagnosticsContext.Set("Host", this.Hostname);
             MappedDiagnosticsContext.Set("Db", this.DbName);
