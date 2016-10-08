@@ -9,6 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using monitoringexe;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 namespace agent.web
 {
@@ -26,7 +29,12 @@ namespace agent.web
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<Configuration>(Configuration);
-            services.AddMvcCore().AddJsonFormatters(j => { j.Converters.Add(new BsonDocumentConverter()); }).AddXmlSerializerFormatters().AddRazorViewEngine();
+            services.AddLocalization(options => options.ResourcesPath = "Resources");
+            services.AddMvcCore().
+                AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix).
+                AddJsonFormatters(j => { j.Converters.Add(new BsonDocumentConverter()); }).
+                AddXmlSerializerFormatters().
+                AddRazorViewEngine();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -40,6 +48,16 @@ namespace agent.web
             }
 
             app.UseStaticFiles();
+
+            app.UseRequestLocalization(new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new RequestCulture("en"),
+                // Formatting numbers, dates, etc.
+                SupportedCultures = { new CultureInfo("en"), new CultureInfo("fr") },
+                // UI strings that we have localized.
+                SupportedUICultures = { new CultureInfo("en"), new CultureInfo("fr") },
+            });
+
             app.UseMvc();
         }
     }

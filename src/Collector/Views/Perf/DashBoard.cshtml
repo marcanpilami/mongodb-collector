@@ -1,7 +1,7 @@
-﻿@* @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer; *@
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer;
 
 @{
-    ViewBag.Title = "Performances MongoDB";
+    ViewBag.Title = Localizer["title"];
 }
 
 @section stylesheet{
@@ -25,7 +25,7 @@
 <div style="height:100%;">
     <div class="container-fluid">
         <div style="margin-bottom: 8px; width: 100%; text-align: center;">
-            <h3 style="display: inline-block; height: 34px; line-height: 34px; margin-top: 5px;">Tableau de bord de l'instance MongoDB</h3>
+            <h3 style="display: inline-block; height: 34px; line-height: 34px; margin-top: 5px;">@Localizer["main_header"]</h3>
             <select id="filternode" class="form-control form-inline" style="display: inline; width: auto;"></select>
         </div>
 
@@ -56,21 +56,21 @@
         </div>
         <div class="panel panel-default">
             <div class="panel-heading">
-                <div class="panel-title">Requêteur</div>
+                <div class="panel-title">@Localizer["query_header"]</div>
             </div>
             <div class="panel-body" style=" padding-top: 0px;">
                 <div class="row">
                     <div class="col-md-12">
                         <form class="form-inline" style="display: inline;">
                             <div class="form-group">
-                                <label for="filterkey">Indicateur</label>
+                                <label for="filterkey">@Localizer["query_label_meter"]</label>
                                 <select id="filterkey" class="form-control"></select>
                             </div>
                         </form>
-                        <button class="btn btn-default" onclick="add_left_axis()">Ajouter axe gauche</button>
-                        <button class="btn btn-default" onclick="add_right_axis()">Ajouter axe droite</button>
-                        <button class="btn btn-default" onclick="clear_graph()">Vider</button>
-                        <button class="btn btn-default" onclick="refresh_graph()">Rafraîchir</button>
+                        <button class="btn btn-default" onclick="add_left_axis()">@Localizer["query_bt_add_left"]</button>
+                        <button class="btn btn-default" onclick="add_right_axis()">@Localizer["query_bt_add_right"]</button>
+                        <button class="btn btn-default" onclick="clear_graph()">@Localizer["query_bt_clear"]</button>
+                        <button class="btn btn-default" onclick="refresh_graph()">@Localizer["query_bt_refresh"]</button>
                     </div>
                     <div class="col-md-12">
                         <div id="chart_1" style="height:350px;width:100%; "></div>
@@ -80,21 +80,21 @@
         </div>
         <div class="panel panel-default">
             <div class="panel-heading">
-                <div class="panel-title">Requêtes tracées les plus récentes</div>
+                <div class="panel-title">@Localizer["trace_header"]</div>
             </div>
             <div class="panel-body table-responsive" style=" padding-top: 0px;">
                 <table class="table table-striped table-condensed">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Millisecondes</th>
-                            <th>Client</th>
-                            <th>Opération</th>
-                            <th>Cible</th>
-                            <th>Examinés</th>
-                            <th>Modifiés</th>
-                            <th>Créés</th>
-                            <th>Retournés</th>
+                            <th>@Localizer["trace_table_date"]</th>
+                            <th>@Localizer["trace_table_duration"]</th>
+                            <th>@Localizer["trace_table_client"]</th>
+                            <th>@Localizer["trace_table_operation"]</th>
+                            <th>@Localizer["trace_table_target"]</th>
+                            <th>@Localizer["trace_table_examined"]</th>
+                            <th>@Localizer["trace_table_modified"]</th>
+                            <th>@Localizer["trace_table_created"]</th>
+                            <th>@Localizer["trace_table_returned"]</th>
                         </tr>
                     </thead>
                     <tbody id="slow"></tbody>
@@ -215,14 +215,14 @@
         $.each(axis1_legend, function () {
             var key = this;
             series.push({
-                label: key + " (axe gauche)",
+                label: key + "@Localizer["query_legend_left_axis_mention"]",
                 yaxis: "yaxis",
             });
         });
         $.each(axis2_legend, function () {
             var key = this;
             series.push({
-                label: key + " (axe droite)",
+                label: key + "@Localizer["query_legend_right_axis_mention"]",
                 yaxis: "y2axis",
             });
         });
@@ -329,7 +329,10 @@
                 var summary = data;
 
                 // Title
-                $("#title1").html("Statut du noeud " + (summary["host_fqdn"] == "localhost" ? summary["host_name"] : summary["host_fqdn"]) + " (" + (summary["node_master"] ? "primaire - " : "secondaire - ") + node + " - " + summary["node_version"] + ") durant la dernière minute (" + moment(summary["_measure"]["$date"]).format('HH:mm') + ").<div class='pull-right'>Collections: " + summary["collections_count"] + " - objects: " + summary["objects_count"] + " - requêtes réseau: " + summary["network_requests_count"] + "</div>");
+                $("#title1").html("@Localizer["status_header"]".replace("A0", summary['host_fqdn'] == 'localhost' ? summary['host_name'] : summary['host_fqdn'])
+                                                               .replace("A1", (summary['node_master'] ? "@Localizer["status_primary"] - " : "@Localizer["status_secondary"] - ") + node + ' - ' + summary['node_version'])
+                                                                .replace("A2", moment(summary['_measure']['$date']).format('HH:mm'))
+                    + "<div class='pull-right'>" + "@Localizer["status_header_counts"]".replace("A0", summary['collections_count']).replace("A1", summary['objects_count']).replace("A2", summary['network_requests_count']) + "</div>");
 
                 // Connections
                 var p1 = $.jqplot('connection1', [[summary["connections_count"], ], ], {
@@ -339,7 +342,7 @@
                             showTickLabels: true,
                             intervals: [100, 200, 300],
                             intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
-                            label: 'Connexions à la base',
+                            label: '@Localizer["status_gauge_connections"]',
                             labelPosition: 'bottom',
                             padding: 0,
                         },
@@ -359,7 +362,7 @@
                             showTickLabels: true,
                             intervals: [10000, 20000, 30000],
                             intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
-                            label: 'Requêtes utiles',
+                            label: '@Localizer["status_gauge_queries"]',
                             labelPosition: 'bottom',
                             padding: 0,
                             ticks: [[0, "0"], [5000, "5k"], [10000, "10k"], [15000, "15k"], [20000, "20k"], [25000, "25k"], [30000, "30k"]],
@@ -380,7 +383,7 @@
                             showTickLabels: true,
                             intervals: [10000, 20000, 30000],
                             intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
-                            label: 'Nombre IO W',
+                            label: '@Localizer["status_gauge_io_w"]',
                             labelPosition: 'bottom',
                             padding: 0,
                             ticks: [[0, "0"], [5000, "5k"], [10000, "10k"], [15000, "15k"], [20000, "20k"], [25000, "25k"], [30000, "30k"]],
@@ -401,7 +404,7 @@
                             showTickLabels: true,
                             intervals: [10000, 20000, 30000],
                             intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
-                            label: 'Nombre IO R',
+                            label: '@Localizer["status_gauge_io_r"]',
                             labelPosition: 'bottom',
                             padding: 0,
                             ticks: [[0, "0"], [5000, "5k"], [10000, "10k"], [15000, "15k"], [20000, "20k"], [25000, "25k"], [30000, "30k"]],
@@ -420,7 +423,7 @@
                         renderer: $.jqplot.MeterGaugeRenderer,
                         rendererOptions: {
                             showTickLabels: true,
-                            label: 'Network IN (bytes)',
+                            label: '@Localizer["status_gauge_network_in"]',
                             labelPosition: 'bottom',
                             padding: 0,
                         },
@@ -438,7 +441,7 @@
                         renderer: $.jqplot.MeterGaugeRenderer,
                         rendererOptions: {
                             showTickLabels: true,
-                            label: 'Network OUT (bytes)',
+                            label: '@Localizer["status_gauge_network_out"]',
                             labelPosition: 'bottom',
                             padding: 0,
                         },
@@ -457,7 +460,7 @@
                         renderer: $.jqplot.MeterGaugeRenderer,
                         rendererOptions: {
                             showTickLabels: true,
-                            label: 'Page faults',
+                            label: '@Localizer["status_gauge_page_faults"]',
                             labelPosition: 'bottom',
                             intervals: [100, 600, 1000],
                             intervalColors: ['#66cc66', '#E7E658', '#cc6666'],
@@ -478,7 +481,7 @@
                         renderer: $.jqplot.MeterGaugeRenderer,
                         rendererOptions: {
                             showTickLabels: true,
-                            label: 'Lecture vers cache (B)',
+                            label: '@Localizer["status_gauge_cache_out"]',
                             labelPosition: 'bottom',
                             padding: 0,
                             min: -0.00000000000000000000000000000001,
@@ -494,7 +497,7 @@
 
                 // Storage size
                 var p9 = $.jqplot('storage1', [[[summary["data_size_byte"], 1], ], [[summary["index_size_byte"], 1]], [[summary["storage_allocated_byte"] - summary["index_size_byte"] - summary["data_size_byte"], 1]]], {
-                    title: "Volumétrie (octets)",
+                    title: "@Localizer["status_bar_storage_header"]",
                     stackSeries: true,
                     captureRightClick: true,
                     seriesDefaults: {
@@ -533,7 +536,7 @@
 
                 // Query types
                 var p10 = $.jqplot('querytype1', [[[summary["queries_aggregate_count"], 1], ], [[summary["queries_count_count"], 1]], [[summary["queries_create_count"], 1]], [[summary["queries_find_count"], 1]], [[summary["queries_getmore_count"], 1]], [[summary["queries_insert_count"], 1]], [[summary["queries_update_count"], 1]]], {
-                    title: "Requêtes (décompte)",
+                    title: "@Localizer["status_bar_queries_header"]",
                     stackSeries: true,
                     captureRightClick: true,
                     seriesDefaults: {
@@ -558,7 +561,7 @@
                         }
                     },
                     series: [
-                        { pointLabels: { labels: ["Aggrégation"] } },
+                        { pointLabels: { labels: ["Aggregation"] } },
                         { pointLabels: { labels: ["Count"] } },
                         { pointLabels: { labels: ["Create"] } },
                         { pointLabels: { labels: ["Find"] } },
@@ -577,7 +580,7 @@
 
                 // Memory
                 var p11 = $.jqplot('mem1', [[[summary["storage_cache_used_bytes"], 1], ], [[summary["mem_resident_bytes"] - summary["storage_cache_used_bytes"], 1]], [[summary["mem_virtual_bytes"] - summary["mem_resident_bytes"], 1]], [[summary["storage_cache_max_bytes"] - summary["storage_cache_used_bytes"], 1]], ], {
-                    title: "Mémoire (octets)",
+                    title: "@Localizer["status_bar_memory_header"]",
                     stackSeries: true,
                     captureRightClick: true,
                     seriesDefaults: {
@@ -602,10 +605,10 @@
                         }
                     },
                     series: [
-                        { pointLabels: { labels: ["cache WT utilisé"] } },
-                        { pointLabels: { labels: ["moteur"] } },
-                        { pointLabels: { labels: ["virtuel non résident"] } },
-                        { pointLabels: { labels: ["cache WT non utilisé"] } },
+                        { pointLabels: { labels: ["@Localizer["status_bar_memory_item_usedwt"]"] } },
+                        { pointLabels: { labels: ["@Localizer["status_bar_memory_item_engine"]"] } },
+                        { pointLabels: { labels: ["@Localizer["status_bar_memory_item_nonresident"]"] } },
+                        { pointLabels: { labels: ["@Localizer["status_bar_memory_item_unusedwt"]"] } },
                     ],
                     legend: {
                         show: false,
