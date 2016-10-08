@@ -106,6 +106,7 @@ namespace agent
             Configuration.Collections.Clear();
             Configuration.MonitoredConnectionStrings.Clear();
             Section.Bind(Configuration);
+            Configuration.Validate();
         }
 
         private static void T_Elapsed(object state)

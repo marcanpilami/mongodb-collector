@@ -25,6 +25,10 @@ namespace agent
 
         public Boolean EnableWebPublishing { get; set; } = true;
 
+        public void Validate()
+        {
+            Items.ForEach(i => i.Validate());
+        }
     }
 
     public class Connection
@@ -63,6 +67,14 @@ namespace agent
             get
             {
                 return Path.Replace("//", "|||||").Split('/').Select(t => t.Replace("|||||", "/")).Skip(1);
+            }
+        }
+
+        public void Validate()
+        {
+            if (JsonUniqueName.StartsWith("_") || JsonUniqueName.Contains(" "))
+            {
+                throw new ArgumentException("JsonUniqueName cannot start with an underscore and must be a valid JSON key. Check your configuration file - item " + JsonUniqueName);
             }
         }
     }
