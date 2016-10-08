@@ -235,13 +235,23 @@ namespace agent.zabbix
                 {
                     if (cnxStr.ToLowerInvariant().Contains(key))
                     {
-                        this.Connexions[key] = new MongoClient(cnxStr + "&connect=direct");
+                        this.Connexions[key] = new MongoClient(cnxStr.Contains("?") ? cnxStr + "&connect=direct" : cnxStr + "?connect=direct&wtimeout=5000&journal=false");
                         break;
                     }
 
                     var tmpClient = new MongoClient(cnxStr);
                     IMongoDatabase tmp = tmpClient.GetDatabase("admin");
-                    var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+
+                    BsonDocument isMaster;
+                    try
+                    {
+                        isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                    }
+                    catch (TimeoutException)
+                    {
+                        continue; // Cannot connect to a given connection string, just go to the next one.
+                    }
+
                     if (!isMaster.Contains("hosts"))
                     {
                         // Not a replica set. Just a single node. Means not found.
@@ -274,6 +284,10 @@ namespace agent.zabbix
                     }
                 }
 
+                if (!this.Connexions.ContainsKey(key))
+                {
+                    Logger.Warn("No connection known for monitoring instance with key {0}", key);
+                }
                 return this.Connexions[key].GetDatabase(database);
             }
         }
