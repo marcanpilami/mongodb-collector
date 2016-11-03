@@ -298,22 +298,22 @@
     function tickRenderer(format, data) {
         var tmp = data;
         var unit = ""; // we begin with no multiplier
-        if (tmp < 1000) {
+        if (Math.abs(tmp) < 1000) {
             tmp = Math.round(tmp * 10) / 10;
         }
-        else if (tmp / 1000 < 1000) {
+        else if (Math.abs(tmp) / 1000 < 1000) {
             unit = "k";
             tmp = Math.round(tmp / 100) / 10;
         }
-        else if (tmp / 1000000 < 1000) {
+        else if (Math.abs(tmp) / 1000000 < 1000) {
             unit = "M";
             tmp = Math.round(tmp / 100000) / 10;
         }
-        else if (tmp / 1000000000 < 1000) {
+        else if (Math.abs(tmp) / 1000000000 < 1000) {
             unit = "G";
             tmp = Math.round(tmp / 100000000) / 10;
         }
-        else if (tmp / 1000000000000 < 1000) {
+        else if (Math.abs(tmp) / 1000000000000 < 1000) {
             unit = "T";
             tmp = Math.round(tmp / 100000000000) / 10;
         }
@@ -515,6 +515,7 @@
                             tickOptions: {
                                 formatter: tickRenderer,
                             },
+                            min: 0,
                         },
                         yaxis: {
                             renderer: $.jqplot.CategoryAxisRenderer,
@@ -554,6 +555,7 @@
                             tickOptions: {
                                 formatter: tickRenderer,
                             },
+                            min: 0,
                         },
                         yaxis: {
                             renderer: $.jqplot.CategoryAxisRenderer,
@@ -598,6 +600,7 @@
                             tickOptions: {
                                 formatter: tickRenderer,
                             },
+                            min: 0,
                         },
                         yaxis: {
                             renderer: $.jqplot.CategoryAxisRenderer,
