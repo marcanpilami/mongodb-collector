@@ -163,7 +163,10 @@
     <value>Queries (count)</value>
   </data>
   <data name="status_bar_storage_header" xml:space="preserve">
-    <value>Volumetry (bytes)</value>
+    <value>Size of database files (bytes)</value>
+  </data>
+  <data name="status_bar_storage_warning" xml:space="preserve">
+    <value>Warning: this bar chart does not show disk free size.</value>
   </data>
   <data name="status_gauge_cache_out" xml:space="preserve">
     <value>Read to cache (B)</value>

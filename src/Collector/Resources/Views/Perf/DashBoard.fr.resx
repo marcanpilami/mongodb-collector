@@ -163,7 +163,10 @@
     <value>Requêtes (décompte)</value>
   </data>
   <data name="status_bar_storage_header" xml:space="preserve">
-    <value>Volumétrie (octets)</value>
+    <value>Taille des fichiers de la base (octets)</value>
+  </data>
+  <data name="status_bar_storage_warning" xml:space="preserve">
+    <value>Attention : ce graphe ne montre pas l'espace libre sur les disques.</value>
   </data>
   <data name="status_gauge_cache_out" xml:space="preserve">
     <value>Lecture vers cache (B)</value>
