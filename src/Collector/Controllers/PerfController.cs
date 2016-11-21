@@ -18,6 +18,7 @@ namespace agent.web
 
         private readonly IMongoCollection<BsonDocument> mongo_detail;
         private readonly IMongoCollection<BsonDocument> mongo_summary;
+        private readonly IMongoCollection<BsonDocument> mongo_trace;
 
         public PerfController(IOptions<Configuration> cfg)
         {
@@ -27,6 +28,7 @@ namespace agent.web
 
             this.mongo_detail = database.GetCollection<BsonDocument>(cfg.Value.DetailCollectionName, new MongoCollectionSettings { ReadPreference = ReadPreference.SecondaryPreferred });
             this.mongo_summary = database.GetCollection<BsonDocument>(cfg.Value.SummaryCollectionName, new MongoCollectionSettings { ReadPreference = ReadPreference.SecondaryPreferred });
+            this.mongo_trace = database.GetCollection<BsonDocument>(config.Value.ProfilerCollectionName, new MongoCollectionSettings { ReadPreference = ReadPreference.SecondaryPreferred });
         }
 
         /// <summary>
@@ -68,7 +70,7 @@ namespace agent.web
             {
                 return null;
             }
-            return await database.GetCollection<BsonDocument>("system.profile").Find(s => true).Sort(new SortDefinitionBuilder<BsonDocument>().Descending("$natural")).Limit(count).ToListAsync();
+            return await this.mongo_trace.Find(s => true).Sort(new SortDefinitionBuilder<BsonDocument>().Descending("$natural")).Limit(count).ToListAsync();
         }
     }
 }

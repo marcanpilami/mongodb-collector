@@ -18,7 +18,9 @@ namespace agent
         public List<CollectionContainer> Collections { get; set; } = new List<CollectionContainer>();
         public String DetailCollectionName { get; set; } = "mongoperf_detail";
         public String SummaryCollectionName { get; set; } = "mongoperf_summary";
+        public String ProfilerCollectionName { get; set; } = "mongoperf_profiler";
         public int DetailCollectionMaxSizeMb { get; set; } = 100;
+        public int ProfilerCollectionMaxSizeMb { get; set; } = 100;
         public bool EnableZabbixAgent { get; set; } = true;
         public String ZabbixAgentListeningInterface { get; set; } = "localhost";
         public int ZabbixAgentListeningPort { get; set; } = 10051;

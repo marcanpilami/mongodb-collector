@@ -31,7 +31,7 @@ namespace monitoringexe
 
         private BsonDocument PreviousTop, PreviousServerStatus;
 
-        private readonly IMongoCollection<BsonDocument> PerfSummaryCollection, PerfDetailCollection;
+        private readonly IMongoCollection<BsonDocument> PerfSummaryCollection, PerfDetailCollection, ProfilerCollection;
 
         private readonly String DbName, Hostname;
 
@@ -40,6 +40,9 @@ namespace monitoringexe
         private readonly BsonDocument emptyArray;
 
         private bool firstLoop = true, secondLoop = true;
+
+        private DateTime latestProfileLoopTime = DateTime.Now;
+        private DateTime startOfLoopDatabaseTime;
 
         public MongodPoller(Configuration cfg, MongoClient client)
         {
@@ -86,6 +89,13 @@ namespace monitoringexe
             }
             PerfDetailCollection.Indexes.CreateOne(Builders<BsonDocument>.IndexKeys.Ascending(d => d["node"]).Ascending(d => d["key"]).Ascending(d => d["when"]), new CreateIndexOptions { Unique = true });
 
+            if (!(TargetDatabase.ListCollections(new ListCollectionsOptions { Filter = new BsonDocument("name", cfg.ProfilerCollectionName) }).ToList()).Any())
+            {
+                TargetDatabase.CreateCollection(cfg.ProfilerCollectionName, new CreateCollectionOptions { Capped = true, MaxSize = cfg.ProfilerCollectionMaxSizeMb * 1024 * 1024 });
+            }
+            ProfilerCollection = TargetDatabase.GetCollection<BsonDocument>(cfg.ProfilerCollectionName);
+            ProfilerCollection.Indexes.CreateOne(Builders<BsonDocument>.IndexKeys.Ascending("ns").Ascending("ts"));
+
             // The empty array must be initialized according to the polling period
             emptyArray = new BsonDocument();
             for (int idx = 0; idx < 60; idx++)
@@ -121,10 +131,26 @@ namespace monitoringexe
         {
             var dbs = await AnalysisAdminDatabase.RunCommandAsync((new BsonDocumentCommand<BsonDocument>(new BsonDocument("listDatabases", 1))));
             BsonDocument res = null;
+            List<BsonDocument> longQueriesAllDbs = new List<BsonDocument>();
             foreach (var db in dbs["databases"].AsBsonArray)
             {
+                if (new string[] { "local", "admin" }.Any(s => s == db["name"].AsString))
+                {
+                    continue;
+                }
+
                 IMongoDatabase idb = ClientAnalysis.GetDatabase(db["name"].AsString);
-                var stats = await idb.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
+                var wait = idb.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
+                var longQueries = idb.GetCollection<BsonDocument>("system.profile").Find(
+                    Builders<BsonDocument>.Filter.And(
+                        Builders<BsonDocument>.Filter.Gte("ts", latestProfileLoopTime),
+                        Builders<BsonDocument>.Filter.Lt("ts", startOfLoopDatabaseTime))).ToListAsync();
+
+                longQueriesAllDbs.AddRange((await longQueries).Where(d => !d.Contains("ns") ||
+                        !(d["ns"].AsString.EndsWith("system.profile") || d["ns"].AsString.Contains(Cfg.ProfilerCollectionName) ||
+                        d["ns"].AsString.Contains(Cfg.DetailCollectionName) || d["ns"].AsString.Contains(Cfg.SummaryCollectionName) ||
+                        (d.Contains("op") && d["op"].AsString == "command"))));
+                var stats = await wait;
 
                 if (res == null)
                 {
@@ -138,7 +164,47 @@ namespace monitoringexe
                     }
                 }
             }
+            latestProfileLoopTime = startOfLoopDatabaseTime;
+
+            foreach (var d in longQueriesAllDbs)
+            {
+                // _id is forbidden!
+                d.Remove("_id");
+                // Also, fields beginning with $ are forbidden... stupid.
+                EscapeDollar(d);
+            }
+
+            if (res != null)
+                res["profile"] = new BsonArray(longQueriesAllDbs);
             return res;
+        }
+
+        private void EscapeDollar(BsonDocument doc)
+        {
+            foreach (var key in doc.Names.ToList())
+            {
+                var value = doc[key];
+                if (key.Contains("$") || key.Contains("."))
+                {
+                    doc.Remove(key);
+                    doc.Add(key.Replace("$", "").Replace(".", ""), value);
+                }
+
+                if (value.IsBsonDocument)
+                {
+                    EscapeDollar(value.AsBsonDocument);
+                }
+                if (value.IsBsonArray)
+                {
+                    foreach (var it in value.AsBsonArray)
+                    {
+                        if (it.IsBsonDocument)
+                        {
+                            EscapeDollar(it.AsBsonDocument);
+                        }
+                    }
+                }
+            }
         }
 
         private async Task Poll(object data)
@@ -151,6 +217,7 @@ namespace monitoringexe
             var loopTimeHour = loopTime.AddMinutes(-loopTime.Minute).AddSeconds(-loopTime.Second).AddMilliseconds(-loopTime.Millisecond);
             BsonDocument newTop = await AnalysisAdminDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("top", 1)));
             BsonDocument newServerStatus = await AnalysisDatabase.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("serverStatus", 1)));
+            startOfLoopDatabaseTime = newServerStatus["localTime"].AsDateTime;
             BsonDocument newDatabaseStats = await GetAllDatabaseStats();
             BsonDocument master = AnalysisDatabase.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
             BsonDocument newReplicaSetStatus = null;
@@ -285,9 +352,14 @@ namespace monitoringexe
                     // Ignore - duplicate keys can happen on startup.
                 }
             }
-            await PerfDetailCollection.BulkWriteAsync(updatesDetail, new BulkWriteOptions { IsOrdered = false });
-            await PerfSummaryCollection.UpdateOneAsync(j => j["node"] == ClientAnalysis.Settings.Server.Host, updateSummary, new UpdateOptions { IsUpsert = true });
-
+            List<Task> tasks = new List<Task>(3);
+            tasks.Add(PerfDetailCollection.BulkWriteAsync(updatesDetail, new BulkWriteOptions { IsOrdered = false }));
+            tasks.Add(PerfSummaryCollection.UpdateOneAsync(j => j["node"] == ClientAnalysis.Settings.Server.Host, updateSummary, new UpdateOptions { IsUpsert = true }));
+            if (newDatabaseStats["profile"].AsBsonArray.Count > 0)
+            {
+                tasks.Add(ProfilerCollection.InsertManyAsync(newDatabaseStats["profile"].AsBsonArray.Values.OfType<BsonDocument>(), new InsertManyOptions { BypassDocumentValidation = true }));
+            }
+            Task.WaitAll(tasks.ToArray());
 
             if (!firstLoop)
             { secondLoop = false; }
