@@ -60,7 +60,7 @@
 
   "scripts": {
     "prepublish": [ "npm install", "node ./node_modules/bower/bin/bower install --force-latest --allow-root", "node ./node_modules/bower/bin/bower prune --allow-root", "node ./node_modules/bower/bin/bower update --force-latest --allow-root", "node ./node_modules/preen/bin/preen" ],
-    "postpublish": [ "dotnet publish-iis --publish-folder %publish:OutputPath% --framework %publish:FullTargetFramework%" ]
+    "postpublish": [ ]
   }
 
 }
