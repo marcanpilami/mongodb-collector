@@ -46,7 +46,7 @@ yum install mongodb-collector-${version}-1.el7.x86_64.rpm
 ```
 
 Go to /etc/mongodb-collector and edit the connection strings (and if needed login and password) inside the .conf file, 
-the publisher's URL and any other value you wish (see the [configuration page](./doc/CONFIG.md) for the meaning of configuration items).
+the publisher's URL and any other value you wish (see the [configuration page](./CONFIG.md) for the meaning of configuration items).
 
 Then you can enable the collector and the publisher:
 ```
