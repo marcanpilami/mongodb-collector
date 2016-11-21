@@ -97,3 +97,4 @@ Items that are hard coded, only present in the "latest status" document and not 
 * uptime
 * host name
 * host FQDN (may be null as it depends on reverse DNS resolution by the database)
+* the queries stored inside "system.profile" in all databases (the traced queries) are always historized when data collection is enabled

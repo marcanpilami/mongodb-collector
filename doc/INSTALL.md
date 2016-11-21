@@ -23,8 +23,7 @@ db.createUser(
 
 ## 1. Linux
 
-On Linux, the two parts of the program (the collector itself, as well as the self-hosted web application) 
-are two systemd services with:
+On Linux, the program (all modules, including the self-hosted web application) is a single systemd service with:
 * configuration inside /etc/mongodb-collector/
 * logs inside /var/log/mongodb-collector/. Logs are auto rotated every day and purged after 10 days.
 * binaries inside /opt/mongodb-collector/ (can be read only)
@@ -43,25 +42,20 @@ Download the RPM and run it (change the version to the one you have downloaded).
 ```
 version="1.0.0"
 wget https://github.com/marcanpilami/mongodb-collector/releases/download/${version}/mongodb-collector-${version}-1.el7.x86_64.rpm
-yum install mongodb-collector-${verion}-1.el7.x86_64.rpm
+yum install mongodb-collector-${version}-1.el7.x86_64.rpm
 ```
 
-Go to /etc/mongodb-collector and edit the connection strings (and if needed login and password) inside the two .conf files, 
-the publisher's URL and any other value you wish (see configuration page for the meaning of configuration items).
+Go to /etc/mongodb-collector and edit the connection strings (and if needed login and password) inside the .conf file, 
+the publisher's URL and any other value you wish (see the [configuration page](./doc/CONFIG.md) for the meaning of configuration items).
 
 Then you can enable the collector and the publisher:
 ```
-# Start collector/agent
-systemctl enable mongodb-collector-collector.service
-systemctl start mongodb-collector-collector.service
-
-# Start publish web services and web dashboard
-systemctl enable mongodb-collector-publisher.service
-systemctl start mongodb-collector-publisher.service
+# Enable and start agent
+systemctl enable mongodb-agent.service
+systemctl start mongodb-agent.service
 
 # Check
-systemctl status mongodb-collector-publisher.service
-systemctl status mongodb-collector-collector.service
+systemctl status mongodb-agent.service
 ```
 
 
@@ -77,3 +71,20 @@ TODO.
 
 Check if the page http://yourserver:5100 (default port) shows you a page with indicators 
 (no blank spaces).
+
+# Upgrade
+
+## RHEL 7.x and CentOS 7.x
+
+This is a simple yum update operation. In details:
+
+Everything must be run as root.
+
+Download the RPM and run it (change the version to the one you have downloaded).
+
+```
+version="1.0.0"
+wget https://github.com/marcanpilami/mongodb-collector/releases/download/${version}/mongodb-collector-${version}-1.el7.x86_64.rpm
+yum update mongodb-collector-${version}-1.el7.x86_64.rpm
+systemctl start mongodb-agent.service
+```
