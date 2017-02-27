@@ -24,6 +24,7 @@ namespace agent
         public bool EnableZabbixAgent { get; set; } = true;
         public String ZabbixAgentListeningInterface { get; set; } = "localhost";
         public int ZabbixAgentListeningPort { get; set; } = 10051;
+        public int ZabbixAgentQueryCacheSecond { get; set; } = 30;
 
         public Boolean EnableWebPublishing { get; set; } = true;
 

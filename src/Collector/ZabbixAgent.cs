@@ -17,7 +17,9 @@ namespace agent.zabbix
         private readonly TcpListener listener;
         private readonly Configuration cfg;
 
-        private readonly Dictionary<String, MongoClient> Connexions = new Dictionary<string, MongoClient>();
+        private readonly Dictionary<string, MongoClient> Connexions = new Dictionary<string, MongoClient>();
+        private readonly Dictionary<string, IMongoDatabase> Databases = new Dictionary<string, IMongoDatabase>();
+        private readonly Dictionary<Tuple<IMongoDatabase, string>, Tuple<DateTime, BsonValue>> DataCache = new Dictionary<Tuple<IMongoDatabase, string>, Tuple<DateTime, BsonValue>>();
 
         internal ZabbixAgent(Configuration cfg)
         {
@@ -55,7 +57,7 @@ namespace agent.zabbix
             while (true)
             {
                 var client = await listener.AcceptTcpClientAsync();
-                DoWork(client);
+                await DoWork(client);
             }
         }
 
@@ -135,40 +137,19 @@ namespace agent.zabbix
                 }
 
                 // Resolve the request
-                var db = GetDatabase(host_key, db_name ?? "admin");
-                BsonValue rqRes;
-                switch (item.Root)
-                {
-                    case "serverStatus":
-                        rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("serverStatus", 1)));
-                        break;
-                    case "top":
-                        rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("top", 1)));
-                        break;
-                    case "dbStats":
-                        rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
-                        break;
-                    case "rsStatus":
-                        BsonDocument master = db.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
-                        if (master.Contains("hosts"))
-                        {
-                            rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1)));
-                            rqRes = rqRes["members"].AsBsonArray.First(b => b.AsBsonDocument.Contains("self") && b["self"].AsBoolean).AsBsonDocument;
-                        }
-                        else
-                        {
-                            await SendNotSupported("item named " + key + " uses replica set status but the database is a single instance", stream);
-                            client.Dispose();
-                            return;
-                        }
-                        break;
-                    default:
-                        await SendNotSupported("item named " + key + " is wrong in agent configuration (non-existent root)", stream);
-                        client.Dispose();
-                        return;
-                }
-
                 long res = 0;
+                BsonValue rqRes;
+                var db = GetDatabase(host_key, db_name ?? "admin");
+                try
+                {
+                    rqRes = await GetRootDocument(item.Root, db);
+                }
+                catch (ZabbixClientException e)
+                {
+                    await SendNotSupported("Item " + item.Path + ": " + e.Message, stream);
+                    client.Dispose();
+                    return;
+                }
 
                 foreach (string s in item.PathSegments)
                 {
@@ -189,6 +170,52 @@ namespace agent.zabbix
                 client.Dispose();
                 return;
             }
+        }
+
+        private async Task<BsonValue> GetRootDocument(String root, IMongoDatabase db)
+        {
+            BsonValue rqRes = null;
+
+            // Check in cache
+            var key = Tuple.Create(db, root);
+            if (DataCache.ContainsKey(key) && DataCache[key].Item1 > DateTime.Now.AddSeconds(-cfg.ZabbixAgentQueryCacheSecond))
+            {
+                return DataCache[key].Item2;
+            }
+
+            // Otherwise, fetch it from database.
+            switch (root)
+            {
+                case "serverStatus":
+                    rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("serverStatus", 1)));
+                    break;
+                case "top":
+                    rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("top", 1)));
+                    break;
+                case "dbStats":
+                    rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
+                    break;
+                case "rsStatus":
+                    BsonDocument master = db.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                    if (master.Contains("hosts"))
+                    {
+                        // This is a replica set, so this query is allowed
+                        rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1)));
+                        rqRes = rqRes["members"].AsBsonArray.First(b => b.AsBsonDocument.Contains("self") && b["self"].AsBoolean).AsBsonDocument;
+                    }
+                    else
+                    {
+                        // This is not a replica set. THis item cannot be supported.
+                        throw new ZabbixClientException("item uses replica set status but the database is a single instance");
+                    }
+                    break;
+                default:
+                    throw new ZabbixClientException("item is wrong in agent configuration (non-existent root)");
+            }
+
+            // Cache it and go.
+            DataCache[key] = Tuple.Create(DateTime.Now, rqRes);
+            return rqRes;
         }
 
         private async Task SendNotSupported(String reason, NetworkStream stream)
@@ -220,26 +247,30 @@ namespace agent.zabbix
             return b;
         }
 
-        private IMongoDatabase GetDatabase(String key, String database = "admin")
+        private MongoClient GetInstanceConnection(string key_cnx)
         {
-            key = key.Replace("_", ":").ToLowerInvariant();
+            key_cnx = key_cnx.Replace("_", ":").ToLowerInvariant();
 
-            if (this.Connexions.ContainsKey(key))
+            if (this.Connexions.ContainsKey(key_cnx))
             {
                 // In cache.
-                return this.Connexions[key].GetDatabase(database);
+                return this.Connexions[key_cnx];
             }
             else
             {
                 foreach (String cnxStr in cfg.MonitoredConnectionStrings)
                 {
-                    if (cnxStr.ToLowerInvariant().Contains(key))
+                    if (cnxStr.ToLowerInvariant().Contains(key_cnx))
                     {
-                        this.Connexions[key] = new MongoClient(cnxStr.Contains("?") ? cnxStr + "&connect=direct" : cnxStr + "?connect=direct&wtimeout=5000&journal=false");
+                        this.Connexions[key_cnx] = new MongoClient(cnxStr.Contains("?") ? cnxStr + "&connect=direct" : cnxStr + "?connect=direct&wtimeout=5000&journal=false&connectTimeoutMS=5000&serverSelectionTimeout=5s");
                         break;
                     }
 
-                    var tmpClient = new MongoClient(cnxStr);
+                    // It may also be a node in a replica set for which we only have one node referenced in configuration
+                    // so check all replica set members for all connection strings.
+                    // Costly, but only done once.
+                    var cnxstr2 = cnxStr.Contains("?") ? cnxStr + "&connectTimeoutMS=5000&serverSelectionTimeout=5s" : cnxStr + "?connectTimeoutMS=5000&serverSelectionTimeout=5s";
+                    var tmpClient = new MongoClient(cnxstr2);
                     IMongoDatabase tmp = tmpClient.GetDatabase("admin");
 
                     BsonDocument isMaster;
@@ -264,7 +295,7 @@ namespace agent.zabbix
                         foreach (var member in rsStatus["members"].AsBsonArray)
                         {
                             var name = member["name"].AsString;
-                            if (name.ToLowerInvariant() == key)
+                            if (name.ToLowerInvariant() == key_cnx)
                             {
                                 String auth = "";
                                 if (cnxStr.Split('@').Length == 2)
@@ -272,24 +303,55 @@ namespace agent.zabbix
                                     auth = cnxStr.Split('@')[0].Replace("mongodb://", "") + "@";
                                 }
 
-                                this.Connexions[key] = new MongoClient(String.Format("mongodb://{0}{1}?wtimeout=5000&journal=false&connect=direct", auth, name));
+                                this.Connexions[key_cnx] = new MongoClient(String.Format("mongodb://{0}{1}?wtimeout=5000&journal=false&connect=direct", auth, name));
                                 break;
                             }
                         }
 
-                        if (this.Connexions.ContainsKey(key))
+                        if (this.Connexions.ContainsKey(key_cnx))
                         {
                             break;
                         }
                     }
                 }
 
-                if (!this.Connexions.ContainsKey(key))
+                if (!this.Connexions.ContainsKey(key_cnx))
                 {
-                    Logger.Warn("No connection known for monitoring instance with key {0}", key);
+                    Logger.Warn("No connection known for monitoring instance with key {0}.", key_cnx);
+                    return null;
                 }
-                return this.Connexions[key].GetDatabase(database);
+                return Connexions[key_cnx];
             }
+        }
+
+        private IMongoDatabase GetDatabase(String key_cnx, String database = "admin")
+        {
+            key_cnx = key_cnx.Replace("_", ":").ToLowerInvariant();
+            var key_db = key_cnx + "_" + database;
+
+            if (this.Databases.ContainsKey(key_db))
+            {
+                // In cache.
+                return this.Databases[key_db];
+            }
+            else
+            {
+                var cnx = GetInstanceConnection(key_cnx);
+                if (cnx == null)
+                {
+                    return null;
+                }
+
+                this.Databases[key_db] = cnx.GetDatabase(database);
+            }
+
+
+            if (!this.Databases.ContainsKey(key_db))
+            {
+                Logger.Warn("No database known for monitoring instance with key {0}", key_cnx);
+                return null;
+            }
+            return Databases[key_db];
         }
 
         private List<String> MonitoredNodeNames
@@ -339,7 +401,11 @@ namespace agent.zabbix
 
             foreach (String nodeName in MonitoredNodeNames) // Connection cnx in cfg.Connections)
             {
-                var a = GetDatabase(nodeName);
+                var a = GetDatabase(nodeName); // Admin db inside instance.
+                if (a == null)
+                {
+                    continue;
+                }
                 var list = await a.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("listDatabases", 1)));
                 foreach (BsonValue db in list["databases"].AsBsonArray)
                 {
@@ -352,5 +418,10 @@ namespace agent.zabbix
 
             return res;
         }
+    }
+
+    internal class ZabbixClientException : Exception
+    {
+        internal ZabbixClientException(String message) : base(message) { }
     }
 }
