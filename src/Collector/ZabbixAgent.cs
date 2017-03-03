@@ -39,6 +39,8 @@ namespace agent.zabbix
                 }
 
                 listener = new TcpListener(addr, cfg.ZabbixAgentListeningPort);
+                listener.Server.ReceiveTimeout = 10000;
+                listener.Server.SendTimeout = 10000;
                 listener.Start();
                 AcceptClients(); // Fire and forget. Not an issue/
             }
@@ -174,7 +176,14 @@ namespace agent.zabbix
             }
             finally
             {
-                client.Dispose();
+                try
+                {
+                    client.Dispose();
+                }
+                catch(Exception)
+                {
+                    // Do nothing. A socket which cannot be closed is likely not open anyway!
+                }
                 watch.Stop();
                 Logger.Trace("Query served in {0} ms", watch.ElapsedMilliseconds);
             }
