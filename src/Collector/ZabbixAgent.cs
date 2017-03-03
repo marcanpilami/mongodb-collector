@@ -121,19 +121,16 @@ namespace agent.zabbix
                 if (key == "mongoagent.ping")
                 {
                     await SendResult("1", stream);
-                    client.Dispose();
                     return;
                 }
                 if (key == "mongoagent.discover.node")
                 {
                     await SendResult(await DiscoverHosts(), stream);
-                    client.Dispose();
                     return;
                 }
                 if (key == "mongoagent.discover.database")
                 {
                     await SendResult(await DiscoverDatabases(), stream);
-                    client.Dispose();
                     return;
                 }
 
@@ -142,7 +139,6 @@ namespace agent.zabbix
                 if (item == null)
                 {
                     await SendNotSupported("no item named " + key + " in configuration", stream);
-                    client.Dispose();
                     return;
                 }
 
@@ -157,7 +153,6 @@ namespace agent.zabbix
                 catch (ZabbixClientException e)
                 {
                     await SendNotSupported("Item " + item.Path + ": " + e.Message, stream);
-                    client.Dispose();
                     return;
                 }
 
@@ -225,7 +220,7 @@ namespace agent.zabbix
                     rqRes = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("dbStats", 1)));
                     break;
                 case "rsStatus":
-                    BsonDocument master = db.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                    BsonDocument master = await db.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
                     if (master.Contains("hosts"))
                     {
                         // This is a replica set, so this query is allowed
