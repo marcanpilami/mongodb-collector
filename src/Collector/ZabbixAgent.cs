@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using monitoringexe;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -63,6 +64,7 @@ namespace agent.zabbix
 
         private async Task DoWork(TcpClient client)
         {
+            var watch = Stopwatch.StartNew();
             var buf = new byte[4096];
             client.ReceiveTimeout = 10000;
             client.SendTimeout = 10000;
@@ -70,6 +72,7 @@ namespace agent.zabbix
 
             try
             {
+                Logger.Trace("New request received");
                 String firstLine = "";
                 String after = "";
                 while (true)
@@ -95,6 +98,7 @@ namespace agent.zabbix
                     firstLine = firstLine.Substring(6); // Remove optional ZBDX + version (0x1) + ACK (0x6) header
                 }
                 var request = firstLine.Trim().Replace("\0", "");
+                Logger.Trace(request);
 
                 // Extract arguments. Request should be in the form key[hostkey, database_name] - with arguments being optional.
                 // Example: lock_collection_exclusive_intent_deadlock_count[192.168.13.54:27017, marsu_db]
@@ -139,7 +143,7 @@ namespace agent.zabbix
                 // Resolve the request
                 long res = 0;
                 BsonValue rqRes;
-                var db = GetDatabase(host_key, db_name ?? "admin");
+                var db = await GetDatabase(host_key, db_name ?? "admin");
                 try
                 {
                     rqRes = await GetRootDocument(item.Root, db);
@@ -162,13 +166,17 @@ namespace agent.zabbix
 
                 // Done
                 await SendResult(res.ToString(), stream);
-                client.Dispose();
             }
             catch (Exception ex)
             {
                 await SendNotSupported("item could not be resolved " + ex.Message, stream);
+                Logger.Trace(ex, "Issue when serving request");
+            }
+            finally
+            {
                 client.Dispose();
-                return;
+                watch.Stop();
+                Logger.Trace("Query served in {0} ms", watch.ElapsedMilliseconds);
             }
         }
 
@@ -180,6 +188,7 @@ namespace agent.zabbix
             var key = Tuple.Create(db, root);
             if (DataCache.ContainsKey(key) && DataCache[key].Item1 > DateTime.Now.AddSeconds(-cfg.ZabbixAgentQueryCacheSecond))
             {
+                Logger.Trace("Result from cache");
                 return DataCache[key].Item2;
             }
 
@@ -220,11 +229,13 @@ namespace agent.zabbix
 
         private async Task SendNotSupported(String reason, NetworkStream stream)
         {
+            //Logger.Trace("Not supported {0}", reason);
             await SendResult("ZBX_NOT_SUPPORTED\0" + reason, stream);
         }
 
         private async Task SendResult(String res, NetworkStream stream)
         {
+            Logger.Trace("Result is {0}", res);
             var bb = new byte[System.Text.Encoding.ASCII.GetByteCount(res)];
             System.Text.Encoding.ASCII.GetBytes(res, 0, res.Length, bb, 0);
 
@@ -247,7 +258,7 @@ namespace agent.zabbix
             return b;
         }
 
-        private MongoClient GetInstanceConnection(string key_cnx)
+        private async Task<MongoClient> GetInstanceConnection(string key_cnx)
         {
             key_cnx = key_cnx.Replace("_", ":").ToLowerInvariant();
 
@@ -276,7 +287,7 @@ namespace agent.zabbix
                     BsonDocument isMaster;
                     try
                     {
-                        isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                        isMaster = await tmp.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
                     }
                     catch (TimeoutException)
                     {
@@ -291,7 +302,7 @@ namespace agent.zabbix
                     else
                     {
                         // Replica set.                    
-                        var rsStatus = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
+                        var rsStatus = await tmp.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
                         foreach (var member in rsStatus["members"].AsBsonArray)
                         {
                             var name = member["name"].AsString;
@@ -324,7 +335,7 @@ namespace agent.zabbix
             }
         }
 
-        private IMongoDatabase GetDatabase(String key_cnx, String database = "admin")
+        private async Task<IMongoDatabase> GetDatabase(String key_cnx, String database = "admin")
         {
             key_cnx = key_cnx.Replace("_", ":").ToLowerInvariant();
             var key_db = key_cnx + "_" + database;
@@ -336,7 +347,7 @@ namespace agent.zabbix
             }
             else
             {
-                var cnx = GetInstanceConnection(key_cnx);
+                var cnx = await GetInstanceConnection(key_cnx);
                 if (cnx == null)
                 {
                     return null;
@@ -398,10 +409,9 @@ namespace agent.zabbix
             String res = "{ \"data\": [";
             List<String> dbs = new List<string>();
 
-
             foreach (String nodeName in MonitoredNodeNames) // Connection cnx in cfg.Connections)
             {
-                var a = GetDatabase(nodeName); // Admin db inside instance.
+                var a = await GetDatabase(nodeName); // Admin db inside instance.
                 if (a == null)
                 {
                     continue;
