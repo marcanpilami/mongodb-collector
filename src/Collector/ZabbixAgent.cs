@@ -22,6 +22,8 @@ namespace agent.zabbix
         private readonly Dictionary<string, IMongoDatabase> Databases = new Dictionary<string, IMongoDatabase>();
         private readonly Dictionary<Tuple<IMongoDatabase, string>, Tuple<DateTime, BsonValue>> DataCache = new Dictionary<Tuple<IMongoDatabase, string>, Tuple<DateTime, BsonValue>>();
 
+        private long Pending = 0;
+
         internal ZabbixAgent(Configuration cfg)
         {
             Logger.Info("Starting Zabbix MongoDB agent");
@@ -52,11 +54,13 @@ namespace agent.zabbix
 
         public void Dispose()
         {
+            Logger.Info("Zabbix MongoDB is stopping");
             listener.Stop();
         }
 
         private async Task AcceptClients()
         {
+            Logger.Info("Zabbix MongoDB agent is now open for connections");
             while (true)
             {
                 var client = await listener.AcceptTcpClientAsync();
@@ -74,7 +78,7 @@ namespace agent.zabbix
 
             try
             {
-                Logger.Trace("New request received");
+                Logger.Trace("New request received. Pending: {0}", ++Pending);
                 String firstLine = "";
                 String after = "";
                 while (true)
@@ -192,7 +196,7 @@ namespace agent.zabbix
                     // Do nothing. A socket which cannot be closed is likely not open anyway!
                 }
                 watch.Stop();
-                Logger.Trace("Query served in {0} ms", watch.ElapsedMilliseconds);
+                Logger.Trace("Query served in {0} ms. Pending: {1}", watch.ElapsedMilliseconds, --Pending);
             }
         }
 
