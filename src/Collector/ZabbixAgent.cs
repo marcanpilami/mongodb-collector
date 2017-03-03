@@ -46,7 +46,7 @@ namespace agent.zabbix
             }
             catch (Exception ex)
             {
-                Logger.Warn("Zabbix agent has failed to start", ex);
+                Logger.Warn(ex, "Zabbix agent has failed to start");
             }
         }
 
@@ -171,8 +171,15 @@ namespace agent.zabbix
             }
             catch (Exception ex)
             {
-                await SendNotSupported("item could not be resolved " + ex.Message, stream);
                 Logger.Trace(ex, "Issue when serving request");
+                try
+                {
+                    await SendNotSupported("item could not be resolved " + ex.Message, stream);
+                }
+                catch (Exception)
+                {
+                    // Just give up.
+                }
             }
             finally
             {
@@ -180,7 +187,7 @@ namespace agent.zabbix
                 {
                     client.Dispose();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     // Do nothing. A socket which cannot be closed is likely not open anyway!
                 }
