@@ -64,7 +64,7 @@ namespace agent.zabbix
             while (true)
             {
                 var client = await listener.AcceptTcpClientAsync();
-                await DoWork(client);
+                DoWork(client);
             }
         }
 
