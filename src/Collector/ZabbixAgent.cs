@@ -120,7 +120,7 @@ namespace agent.zabbix
                 }
                 if (key == "mongoagent.discover.node")
                 {
-                    await SendResult(DiscoverHosts(), stream);
+                    await SendResult(await DiscoverHosts(), stream);
                     client.Dispose();
                     return;
                 }
@@ -365,40 +365,37 @@ namespace agent.zabbix
             return Databases[key_db];
         }
 
-        private List<String> MonitoredNodeNames
+        private async Task<List<String>> MonitoredNodeNames()
         {
-            get
+            List<String> monitored = new List<string>();
+            foreach (String cnx in cfg.MonitoredConnectionStrings)
             {
-                List<String> monitored = new List<string>();
-                foreach (String cnx in cfg.MonitoredConnectionStrings)
-                {
-                    var tmpClient = new MongoClient(cnx);
-                    IMongoDatabase tmp = tmpClient.GetDatabase("admin");
+                var tmpClient = new MongoClient(cnx);
+                IMongoDatabase tmp = tmpClient.GetDatabase("admin");
 
-                    var isMaster = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
-                    if (!isMaster.Contains("hosts"))
+                var isMaster = await tmp.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("isMaster", 1)));
+                if (!isMaster.Contains("hosts"))
+                {
+                    // Not a replica set. Just a single node.
+                    monitored.Add(tmpClient.Settings.Server.Host + ":" + tmpClient.Settings.Server.Port);
+                }
+                else
+                {
+                    // Replica set.                    
+                    var rsStatus = await tmp.RunCommandAsync(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
+                    foreach (var member in rsStatus["members"].AsBsonArray)
                     {
-                        // Not a replica set. Just a single node.
-                        monitored.Add(tmpClient.Settings.Server.Host + ":" + tmpClient.Settings.Server.Port);
-                    }
-                    else
-                    {
-                        // Replica set.                    
-                        var rsStatus = tmp.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1))); // must run against admin
-                        foreach (var member in rsStatus["members"].AsBsonArray)
-                        {
-                            monitored.Add(member["name"].AsString);
-                        }
+                        monitored.Add(member["name"].AsString);
                     }
                 }
-                return monitored;
             }
+            return monitored;
         }
 
-        private String DiscoverHosts()
+        private async Task<String> DiscoverHosts()
         {
             String res = "{ \"data\": [";
-            res += string.Join(",", MonitoredNodeNames.Select(c => " { \"{#NODEKEY}\":\"" + c.Replace(":", "_") + "\"}"));
+            res += string.Join(",", (await MonitoredNodeNames()).Select(c => " { \"{#NODEKEY}\":\"" + c.Replace(":", "_") + "\"}"));
             res += "]}";
 
             return res;
@@ -409,7 +406,7 @@ namespace agent.zabbix
             String res = "{ \"data\": [";
             List<String> dbs = new List<string>();
 
-            foreach (String nodeName in MonitoredNodeNames) // Connection cnx in cfg.Connections)
+            foreach (String nodeName in await MonitoredNodeNames())
             {
                 var a = await GetDatabase(nodeName); // Admin db inside instance.
                 if (a == null)
