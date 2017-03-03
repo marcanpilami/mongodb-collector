@@ -24,6 +24,7 @@ namespace agent
         private static List<ClusterHandler> clusters;
         private static String ConfigPath = null;
         private static ZabbixAgent agent;
+        private static IWebHost webhost;
 
         private static Timer configTimer;
 
@@ -54,7 +55,7 @@ namespace agent
 
             if (Configuration.EnableWebPublishing)
             {
-                var host = new WebHostBuilder()
+                webhost = new WebHostBuilder()
                    .UseConfiguration(Section)
                    .UseKestrel()
                    .UseContentRoot(Directory.GetCurrentDirectory())
@@ -62,7 +63,7 @@ namespace agent
                    .UseStartup<Startup>()
                    .Build();
 
-                host.Start();
+                webhost.Start();
             }
 
             clusters = new List<ClusterHandler>();
@@ -88,6 +89,8 @@ namespace agent
             {
                 p.Dispose();
             }
+            agent?.Dispose();
+            webhost.Dispose();
         }
 
         public static void LoadConfiguration()
