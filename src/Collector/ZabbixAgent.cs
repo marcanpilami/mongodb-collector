@@ -42,7 +42,7 @@ namespace agent.zabbix
                 listener.Server.ReceiveTimeout = 10000;
                 listener.Server.SendTimeout = 10000;
                 listener.Start();
-                AcceptClients(); // Fire and forget. Not an issue/
+                Task.Run(AcceptClients); // New thread.
             }
             catch (Exception ex)
             {
@@ -230,7 +230,7 @@ namespace agent.zabbix
                     }
                     else
                     {
-                        // This is not a replica set. THis item cannot be supported.
+                        // This is not a replica set. This item cannot be supported.
                         throw new ZabbixClientException("item uses replica set status but the database is a single instance");
                     }
                     break;
