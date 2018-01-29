@@ -1,5 +1,5 @@
 ﻿{
-  "EnableDataCollection": false,
+  "EnableDataCollection": true,
   "DetailCollectionName": "mongoperf_detail",
   "DetailCollectionMaxSizeMb": 100,
   "SummaryCollectionName": "mongoperf_summary",
@@ -12,14 +12,14 @@
   "EnableZabbixAgent": false,
   "ZabbixAgentListeningInterface": "0.0.0.0",
   "ZabbixAgentListeningPort": 10049,
+  "ZabbixAgentQueryCacheSecond": 30,
 
   "MonitoredConnectionStrings": [
-    "mongodb://192.168.13.54:27017",
-    "mongodb://mg1.lab.org:27017?replicaSet=mobicop"
+    "mongodb://localhost:27017"
   ],
 
   "ResultsStorageConnection": {
-    "ConnectionString": "mongodb://192.168.13.54",
+    "ConnectionString": "mongodb://localhost",
     "DatabaseName": "datacollector"
   },
 

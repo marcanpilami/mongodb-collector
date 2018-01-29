@@ -1,12 +1,10 @@
 ﻿using agent;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using monitoringexe;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -335,7 +333,7 @@ namespace monitoringexe
             updateSummary = updateSummary.Set("node_version", newServerStatus["version"]);
             updateSummary = updateSummary.Set("node_master", master["ismaster"].AsBoolean);
             updateSummary = updateSummary.Set("host_name", newServerStatus["host"]);
-            updateSummary = updateSummary.Set("host_fqdn", newServerStatus["advisoryHostFQDNs"] != null ? newServerStatus["advisoryHostFQDNs"].AsBsonArray.Count > 0 ? newServerStatus["advisoryHostFQDNs"][0] : "localhost" : "localhost");
+            updateSummary = updateSummary.Set("host_fqdn", newServerStatus.Contains("advisoryHostFQDNs") && newServerStatus["advisoryHostFQDNs"] != null ? newServerStatus["advisoryHostFQDNs"].AsBsonArray.Count > 0 ? newServerStatus["advisoryHostFQDNs"][0] : "localhost" : "localhost");
 
             // End of loop - current items become previous ones, and run the update query.
             PreviousServerStatus = newServerStatus;
@@ -367,4 +365,3 @@ namespace monitoringexe
         }
     }
 }
-

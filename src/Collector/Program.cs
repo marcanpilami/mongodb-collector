@@ -1,6 +1,7 @@
 ﻿using agent.web;
 using agent.zabbix;
 using Collector;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.PlatformAbstractions;
@@ -9,10 +10,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace agent
 {
@@ -24,7 +22,6 @@ namespace agent
         private static List<ClusterHandler> clusters;
         private static String ConfigPath = null;
         private static ZabbixAgent agent;
-        private static IWebHost webhost;
 
         private static Timer configTimer;
 
@@ -49,21 +46,21 @@ namespace agent
             Thread.Sleep(Timeout.Infinite);
         }
 
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost
+                .CreateDefaultBuilder(args)
+                .UseStartup<Startup>()
+                .UseConfiguration(Section)
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .Build();
+
         public static void Start()
         {
             LoadConfiguration();
 
             if (Configuration.EnableWebPublishing)
             {
-                webhost = new WebHostBuilder()
-                   .UseConfiguration(Section)
-                   .UseKestrel()
-                   .UseContentRoot(Directory.GetCurrentDirectory())
-                   //.UseIISIntegration()
-                   .UseStartup<Startup>()
-                   .Build();
-
-                webhost.Start();
+                BuildWebHost(null).RunAsync();
             }
 
             clusters = new List<ClusterHandler>();
@@ -90,7 +87,6 @@ namespace agent
                 p.Dispose();
             }
             agent?.Dispose();
-            webhost.Dispose();
         }
 
         public static void LoadConfiguration()
