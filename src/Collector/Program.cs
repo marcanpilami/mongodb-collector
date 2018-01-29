@@ -115,7 +115,7 @@ namespace agent
 
         public static long ToLong(this BsonValue value)
         {
-            return value.IsInt64 ? value.AsInt64 : value.IsInt32 ? (long)value.AsInt32 : (long)value.AsDouble;
+            return value.IsInt64 ? value.AsInt64 : value.IsInt32 ? (long)value.AsInt32 : value.IsBsonTimestamp ? 0L : 0L;
         }
     }
 }
